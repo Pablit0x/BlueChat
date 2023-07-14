@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">BlueChat</string>
+    <string name="device_name">Device Name</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="no_name">No Name</string>
+    <string name="paired_devices">Paired Devices</string>
+    <string name="available_devices">Available Devices</string>
+    <string name="rename_device">Rename device</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="other_nearby_devices_can_see_this_name">Other nearby devices can see this name.</string>
 </resources>

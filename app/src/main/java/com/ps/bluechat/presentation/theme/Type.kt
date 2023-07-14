@@ -1,4 +1,4 @@
-package com.ps.bluechat.ui.theme
+package com.ps.bluechat.presentation.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle

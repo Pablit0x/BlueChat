@@ -1,4 +1,4 @@
-package com.ps.bluechat.ui.theme
+package com.ps.bluechat.presentation.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Shapes

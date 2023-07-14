@@ -5,13 +5,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 
-class FoundDeviceReceiver(
+class BluetoothDeviceReceiver(
     private val onDeviceFound : (BluetoothDevice) -> Unit
 ) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        when(intent?.action){
-            BluetoothDevice.ACTION_FOUND -> {
+        val intentAction = intent?.action
+        Log.d(this::class.simpleName, "onReceive() $intentAction")
+        when(intentAction){
+            BluetoothDevice.ACTION_FOUND, BluetoothDevice.ACTION_NAME_CHANGED -> {
                 val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(
                         BluetoothDevice.EXTRA_DEVICE,
