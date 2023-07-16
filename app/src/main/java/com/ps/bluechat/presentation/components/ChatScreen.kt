@@ -1,6 +1,7 @@
 package com.ps.bluechat.presentation.components
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,8 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -19,18 +19,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ChatScreen(
-    state: BluetoothUiState, onDisconnect: () -> Unit, onSendMessage: (String) -> Unit
+    direction: Direction,
+    state: BluetoothUiState,
+    onDisconnect: () -> Unit,
+    onSendMessage: (String) -> Unit
 ) {
     val message = rememberSaveable {
         mutableStateOf("")
     }
 
+    val isTextFieldEnabled by remember { mutableStateOf(true) }
+
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    when {
+        state.isConnected -> {}
+        state.isConnecting -> {}
+        else -> {
+            direction.navigateBackToHomeScreen()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -44,7 +58,10 @@ fun ChatScreen(
             Text(
                 text = "Messages", fontSize = 24.sp, modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = onDisconnect) {
+            IconButton(onClick = {
+                onDisconnect()
+                direction.navigateBackToHomeScreen()
+            }) {
                 Icon(
                     imageVector = Icons.Default.Close, contentDescription = null
                 )
@@ -81,6 +98,7 @@ fun ChatScreen(
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colors.onSecondary
                 ),
+                enabled = isTextFieldEnabled,
                 trailingIcon = {
                     Icon(imageVector = Icons.Default.Send,
                         contentDescription = null,

@@ -19,6 +19,7 @@ import com.google.accompanist.navigation.animation.composable
 import com.ps.bluechat.R
 import com.ps.bluechat.presentation.BluetoothViewModel
 import com.ps.bluechat.presentation.components.ChangeNameScreen
+import com.ps.bluechat.presentation.components.ChatScreen
 import com.ps.bluechat.presentation.components.DeviceScreen
 
 @Composable
@@ -29,17 +30,15 @@ import com.ps.bluechat.presentation.components.DeviceScreen
 fun NavGraph(
     navController: NavHostController
 ) {
-    val direction = remember(navController) { Direction (navController) }
-    val context : Context = LocalContext.current
+    val direction = remember(navController) { Direction(navController) }
+    val context: Context = LocalContext.current
     val viewModel = hiltViewModel<BluetoothViewModel>()
     val state by viewModel.state.collectAsState()
 
-    AnimatedNavHost(
-        navController = navController,
+    AnimatedNavHost(navController = navController,
         startDestination = Screen.HomeScreen.route,
         enterTransition = { EnterTransition.None },
-        exitTransition = { ExitTransition.None }
-    ) {
+        exitTransition = { ExitTransition.None }) {
         composable(
             route = Screen.HomeScreen.route
         ) {
@@ -53,18 +52,25 @@ fun NavGraph(
                 onDiscoverabilityEnable = viewModel::enableDiscoverability,
                 onDiscoverabilityDisable = viewModel::disableDiscoverability,
                 onStartConnecting = viewModel::connectToDevice,
-                onStartServer = viewModel::observeIncomingConnections,
-                onDisconnect = viewModel::disconnectDevice,
-                onSendMessage = viewModel::sendMessage
+                onStartServer = viewModel::observeIncomingConnections
             )
         }
         composable(
             route = Screen.ChangeDeviceNameScreen.route
-        ){
-            ChangeNameScreen(
-                direction = direction,
+        ) {
+            ChangeNameScreen(direction = direction,
                 deviceName = state.deviceName ?: context.getString(R.string.no_name),
-                onDeviceNameChange = {newName -> viewModel.changeDeviceName(deviceName = newName)}
+                onDeviceNameChange = { newName -> viewModel.changeDeviceName(deviceName = newName) })
+        }
+
+        composable(
+            route = Screen.ChatScreen.route
+        ) {
+            ChatScreen(
+                direction = direction,
+                state = state,
+                onDisconnect = viewModel::disconnectDevice,
+                onSendMessage = viewModel::sendMessage
             )
         }
     }

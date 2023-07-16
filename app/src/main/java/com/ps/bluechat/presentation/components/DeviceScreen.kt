@@ -36,13 +36,10 @@ fun DeviceScreen(
     onDiscoverabilityEnable: () -> Unit,
     onDiscoverabilityDisable: () -> Unit,
     onBluetoothEnable: () -> Unit,
-    onBluetoothDisable: () -> Unit,
-    onDisconnect: () -> Unit,
-    onSendMessage: (String) -> Unit
+    onBluetoothDisable: () -> Unit
 
 ) {
     val context: Context = LocalContext.current
-    val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(key1 = state.errorMessage) {
         state.errorMessage?.let { message ->
@@ -55,23 +52,6 @@ fun DeviceScreen(
             Log.d("ViewModel - Device Screen", "Connected Success!")
             Toast.makeText(context, "You are connected", Toast.LENGTH_LONG).show()
         }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_RESUME -> onStartScan()
-                Lifecycle.Event.ON_PAUSE -> onStopScan()
-                else -> {}
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-
     }
 
     when {
@@ -89,9 +69,7 @@ fun DeviceScreen(
             }
         }
         state.isConnected -> {
-            ChatScreen(
-                state = state, onDisconnect = onDisconnect, onSendMessage = onSendMessage
-            )
+            direction.navigateToChatScreen()
         }
 
         else -> {

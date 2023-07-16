@@ -40,18 +40,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
 
-    private val bluetoothManager by lazy {
-        applicationContext.getSystemService(BluetoothManager::class.java)
-    }
-
-    private val bluetoothAdapter by lazy {
-        bluetoothManager?.adapter
-    }
-
-    private val isBluetoothDiscoverable: Boolean
-        @SuppressLint("MissingPermission")
-        get() = bluetoothAdapter?.scanMode == BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE
-
     @OptIn(
         ExperimentalAnimationApi::class,
         ExperimentalComposeUiApi::class,
@@ -61,34 +49,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
-        val ensureDiscoverability = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            if (result.resultCode == RESULT_CANCELED) {
-                Toast.makeText(
-                    applicationContext,
-                    applicationContext.getString(R.string.invisibility_mode),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
         val permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-
-            val isBluetoothConnectGranted =
-                permissions[Manifest.permission.BLUETOOTH_CONNECT] == true
-
-            val canEnableDiscoverability =
-                permissions[Manifest.permission.BLUETOOTH_SCAN] == true
-
-            if (isBluetoothConnectGranted && canEnableDiscoverability && !isBluetoothDiscoverable) {
-                val discoverableIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
-                discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
-                ensureDiscoverability.launch(discoverableIntent)
-            }
+        ){
+            /*HERE I CAN CHECK IF THE PERMISSION WERE GRANTED OR NOT*/
         }
 
         permissionLauncher.launch(

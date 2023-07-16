@@ -24,4 +24,8 @@ class Direction(
     val navigateBack: () -> Unit = {
         navController.navigateUp()
     }
+
+    val navigateToChatScreen: () -> Unit = {
+        navController.navigate(Screen.ChatScreen.route)
+    }
 }
