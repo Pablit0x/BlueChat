@@ -53,7 +53,9 @@ fun NavGraph(
                 onDiscoverabilityEnable = viewModel::enableDiscoverability,
                 onDiscoverabilityDisable = viewModel::disableDiscoverability,
                 onStartConnecting = viewModel::connectToDevice,
-                onStartServer = viewModel::observeIncomingConnections
+                onStartServer = viewModel::observeIncomingConnections,
+                onDisconnect = viewModel::disconnectDevice,
+                onSendMessage = viewModel::sendMessage
             )
         }
         composable(

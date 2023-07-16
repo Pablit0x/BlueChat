@@ -3,22 +3,23 @@ package com.ps.bluechat.data.chat
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.*
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import com.ps.bluechat.R
-import com.ps.bluechat.domain.chat.BluetoothController
-import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
-import com.ps.bluechat.domain.chat.ConnectionResult
-import com.ps.bluechat.domain.chat.ScanningState
+import com.ps.bluechat.domain.chat.*
 import com.ps.util.Constants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.*
 
 
@@ -64,6 +65,8 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     private val bluetoothAdapter by lazy {
         bluetoothManager?.adapter
     }
+
+    private var dataTransferService: BluetoothDataTransferService? = null
 
     private var currentServerSocket: BluetoothServerSocket? = null
     private var currentClientSocket: BluetoothSocket? = null
@@ -124,6 +127,11 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             emit(ConnectionResult.ConnectionEstablished)
             currentClientSocket?.let {
                 currentServerSocket?.close()
+                val service = BluetoothDataTransferService(it)
+                dataTransferService = service
+                emitAll(service.listenForIncomingMessages().map { message ->
+                    ConnectionResult.TransferSucceeded(message)
+                })
             }
         }.onCompletion {
             closeConnection()
@@ -147,6 +155,14 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                 try {
                     socket.connect()
                     emit(ConnectionResult.ConnectionEstablished)
+
+                    BluetoothDataTransferService(socket).also {
+                        dataTransferService = it
+                        emitAll(
+                            it.listenForIncomingMessages()
+                            .map { message ->
+                                ConnectionResult.TransferSucceeded(message) })
+                    }
                 } catch (e: IOException) {
                     socket.close()
                     currentClientSocket = null
@@ -156,6 +172,27 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         }.onCompletion {
             closeConnection()
         }.flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun trySendMessage(message: String): BluetoothMessage? {
+        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT))
+            return null
+
+        if(dataTransferService == null){
+            return null
+        }
+
+
+        val bluetoothMessage = BluetoothMessage(
+            message = message,
+            isFromLocalUser = true,
+            address = bluetoothAdapter?.address ?: "My Address",
+            time = getCurrentTime()
+        )
+
+        dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
+
+        return bluetoothMessage
     }
 
     override fun closeConnection() {
@@ -282,7 +319,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun updateDeviceName() {
-        _deviceName.update {bluetoothAdapter?.name ?: "No Name"}
+        _deviceName.update { bluetoothAdapter?.name ?: "No Name" }
     }
 
     private fun hasPermission(permission: String): Boolean {

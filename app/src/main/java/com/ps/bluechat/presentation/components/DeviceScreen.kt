@@ -37,8 +37,10 @@ fun DeviceScreen(
     onDiscoverabilityDisable: () -> Unit,
     onBluetoothEnable: () -> Unit,
     onBluetoothDisable: () -> Unit,
+    onDisconnect: () -> Unit,
+    onSendMessage: (String) -> Unit
 
-    ) {
+) {
     val context: Context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 
@@ -72,64 +74,75 @@ fun DeviceScreen(
 
     }
 
-    if (state.isConnecting) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            CircularProgressIndicator()
-            Text(
-                text = context.getString(R.string.connecting),
-                color = MaterialTheme.colors.onSurface
-            )
-        }
-    } else {
-        Scaffold(floatingActionButton = {
-            BluetoothActionSelector(
-                scanningState = state.scanningState,
-                onStartScan = onStartScan,
-                onStopScan = onStopScan,
-                onStartServer = onStartServer)
-        }) { padding ->
+    when {
+        state.isConnecting -> {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-
-                ModeToggleField(
-                    isOn = state.isBluetoothEnabled,
-                    modeName = context.getString(com.ps.bluechat.R.string.bluetooth),
-                    onEnable = onBluetoothEnable,
-                    onDisable = onBluetoothDisable
-                )
-
-                ModeToggleField(
-                    isOn = state.isDeviceDiscoverable,
-                    modeName = context.getString(com.ps.bluechat.R.string.discoverability),
-                    onEnable = onDiscoverabilityEnable,
-                    onDisable = onDiscoverabilityDisable
-                )
-
-                DeviceNameField(
-                    deviceName = state.deviceName
-                        ?: context.getString(com.ps.bluechat.R.string.no_name),
-                    direction = direction
-                )
-                Divider(color = Color.DarkGray, thickness = 1.dp)
-
-                BluetoothDeviceList(
-                    scanningState = state.scanningState,
-                    pairedDevices = state.pairedDevices,
-                    scannedDevices = state.scannedDevices,
-                    onStartConnecting = onStartConnecting,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    onRestartScan = onStartScan
+                CircularProgressIndicator()
+                Text(
+                    text = context.getString(R.string.connecting),
+                    color = MaterialTheme.colors.onSurface
                 )
             }
         }
+        state.isConnected -> {
+            ChatScreen(
+                state = state, onDisconnect = onDisconnect, onSendMessage = onSendMessage
+            )
+        }
+
+        else -> {
+            Scaffold(floatingActionButton = {
+                BluetoothActionSelector(
+                    scanningState = state.scanningState,
+                    onStartScan = onStartScan,
+                    onStopScan = onStopScan,
+                    onStartServer = onStartServer
+                )
+            }) { padding ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+
+                    ModeToggleField(
+                        isOn = state.isBluetoothEnabled,
+                        modeName = context.getString(com.ps.bluechat.R.string.bluetooth),
+                        onEnable = onBluetoothEnable,
+                        onDisable = onBluetoothDisable
+                    )
+
+                    ModeToggleField(
+                        isOn = state.isDeviceDiscoverable,
+                        modeName = context.getString(com.ps.bluechat.R.string.discoverability),
+                        onEnable = onDiscoverabilityEnable,
+                        onDisable = onDiscoverabilityDisable
+                    )
+
+                    DeviceNameField(
+                        deviceName = state.deviceName
+                            ?: context.getString(com.ps.bluechat.R.string.no_name),
+                        direction = direction
+                    )
+                    Divider(color = Color.DarkGray, thickness = 1.dp)
+
+                    BluetoothDeviceList(
+                        scanningState = state.scanningState,
+                        pairedDevices = state.pairedDevices,
+                        scannedDevices = state.scannedDevices,
+                        onStartConnecting = onStartConnecting,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        onRestartScan = onStartScan
+                    )
+                }
+            }
+        }
+
     }
 }

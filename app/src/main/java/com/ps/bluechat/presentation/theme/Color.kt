@@ -11,3 +11,5 @@ val TextBlack = Color(0xFF111111)
 val DarkGrey = Color(0xFF282C31)
 val SuperLightGrey = Color(0xFFE5E5E5)
 val NormalGrey = Color(0xFF53565B)
+
+val MessageBlue = Color(0x601982FC)
