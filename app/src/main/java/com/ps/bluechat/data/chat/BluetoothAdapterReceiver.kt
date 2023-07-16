@@ -9,12 +9,21 @@ import com.ps.bluechat.domain.chat.ScanningState
 
 class BluetoothAdapterReceiver(
     private val isBluetoothEnabled: (Boolean) -> Unit,
-    private val isDiscovering : (ScanningState) -> Unit
+    private val isDiscovering : (ScanningState) -> Unit,
+    private val isDeviceDiscoverable : (Boolean) -> Unit
 ) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
+        val scanMode = intent?.getIntExtra(BluetoothAdapter.EXTRA_SCAN_MODE, BluetoothAdapter.SCAN_MODE_NONE)
+        val state = intent?.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+
         when(intent?.action){
+            BluetoothAdapter.ACTION_SCAN_MODE_CHANGED -> {
+                when(scanMode){
+                    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE -> isDeviceDiscoverable(true)
+                    else -> isDeviceDiscoverable(false)
+                }
+            }
             BluetoothAdapter.ACTION_STATE_CHANGED -> {
-                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
                 when (state) {
                     BluetoothAdapter.STATE_ON -> isBluetoothEnabled(true)
                     BluetoothAdapter.STATE_OFF -> isBluetoothEnabled(false)

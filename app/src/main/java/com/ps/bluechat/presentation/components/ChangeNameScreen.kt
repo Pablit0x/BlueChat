@@ -67,8 +67,6 @@ fun ChangeNameScreen(
             }
             Text(
                 text = context.getString(R.string.rename_device),
-                fontWeight = FontWeight.Thin,
-                fontFamily = FontFamily.Monospace,
                 fontSize = 22.sp,
             )
             IconButton(onClick = {
@@ -103,7 +101,6 @@ fun ChangeNameScreen(
 
             Text(
                 text = stringResource(id = R.string.other_nearby_devices_can_see_this_name),
-                fontFamily = FontFamily.Default,
                 textAlign = TextAlign.Start,
                 fontSize = 16.sp,
                 color = Color.DarkGray

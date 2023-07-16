@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.google.accompanist.navigation.animation.AnimatedNavHost
@@ -50,7 +49,11 @@ fun NavGraph(
                 onStartScan = viewModel::startScan,
                 onStopScan = viewModel::stopScan,
                 onBluetoothEnable = viewModel::enableBluetooth,
-                onBluetoothDisable = viewModel::disableBluetooth
+                onBluetoothDisable = viewModel::disableBluetooth,
+                onDiscoverabilityEnable = viewModel::enableDiscoverability,
+                onDiscoverabilityDisable = viewModel::disableDiscoverability,
+                onStartConnecting = viewModel::connectToDevice,
+                onStartServer = viewModel::observeIncomingConnections
             )
         }
         composable(
@@ -59,7 +62,7 @@ fun NavGraph(
             ChangeNameScreen(
                 direction = direction,
                 deviceName = state.deviceName ?: context.getString(R.string.no_name),
-                onDeviceNameChange = {newName -> viewModel.changeDeviceName(newName = newName)}
+                onDeviceNameChange = {newName -> viewModel.changeDeviceName(deviceName = newName)}
             )
         }
     }

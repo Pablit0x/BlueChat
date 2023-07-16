@@ -1,12 +1,8 @@
 package com.ps.bluechat.presentation.components
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
+import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -15,77 +11,116 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.ps.bluechat.R
+import com.ps.bluechat.domain.chat.ScanningState
+
 
 @ExperimentalMaterialApi
 @Composable
 fun BluetoothActionSelector(
+    scanningState: ScanningState,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
     onStartServer: () -> Unit
 ) {
-    var expandedState by remember { mutableStateOf(false) }
-    val interactionSource = remember { MutableInteractionSource() }
+    val context: Context = LocalContext.current
+    var isMenuExtended by remember { mutableStateOf(false) }
+
+    Column(
+        horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom
+    ) {
+        AnimatedVisibility(visible = isMenuExtended, modifier = Modifier.padding(bottom = 16.dp)) {
+            Column {
+
+                when(scanningState){
+                    ScanningState.DISCOVERING -> {
+                        MenuActionButton(
+                            icon = Icons.Default.Pause,
+                            description = context.getString(R.string.stop_scan),
+                            onClickAction = {
+                                onStopScan()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 8.dp)
+                        )
+                    }
+                    ScanningState.NOT_DISCOVERING -> {
+                        MenuActionButton(
+                            icon = Icons.Default.PlayArrow,
+                            description = context.getString(R.string.start_scan),
+                            onClickAction = {
+                                onStartScan()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 8.dp)
+                        )
+                    }
+                    else -> {}
+                }
 
 
-    Box(modifier = Modifier
-        .animateContentSize(
-            animationSpec = tween(
-                durationMillis = 300, easing = LinearOutSlowInEasing
-            )
-        )
-        .clickable(
-            interactionSource = interactionSource, indication = null
-        ) {
-            expandedState = !expandedState
-        }) {
-        Column {
-            if (!expandedState) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "",
-                    tint = MaterialTheme.colors.onSecondary,
-                    modifier = Modifier.size(48.dp).background(MaterialTheme.colors.secondary, shape = CircleShape).padding(8.dp)
+                MenuActionButton(
+                    icon = Icons.Default.BluetoothSearching,
+                    description = context.getString(R.string.start_server),
+                    onClickAction = {
+                        onStartServer()
+                        isMenuExtended = !isMenuExtended
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
                 )
             }
-            if (expandedState) {
-                Column(
-                    horizontalAlignment = Alignment.End
-                ){
-                    Button(onClick = {
-                        onStartScan()
-                        expandedState = !expandedState
-                    },
-                        modifier = Modifier.fillMaxWidth(0.3f)){
-                        Text("Start Scan")
-                    }
+        }
+        IconButton(onClick = { isMenuExtended = !isMenuExtended }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "",
+                tint = MaterialTheme.colors.onSecondary,
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(MaterialTheme.colors.secondary, shape = CircleShape)
+                    .padding(8.dp)
+            )
+        }
+    }
+}
 
-                    Button(onClick = {
-                        onStopScan()
-                        expandedState = !expandedState
-                    },
-                    modifier = Modifier.fillMaxWidth(0.3f)
-                    ){
-                        Text("Stop Scan")
-                    }
+@Composable
+fun MenuActionButton(
+    icon: ImageVector, description: String, onClickAction: () -> Unit, modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = {
+            onClickAction()
+        },
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+        ) {
 
-                    Button(onClick = {
-                        onStartScan()
-                        expandedState = !expandedState
-                    },
-                        modifier = Modifier.fillMaxWidth(0.3f)
-                    ){
-                        Text("Start Server")
-                    }
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "",
-                            tint = MaterialTheme.colors.error,
-                            modifier = Modifier.size(48.dp).padding(8.dp)
-                        )
-                }
-            }
+            Text(text = description)
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Icon(
+                imageVector = icon,
+                contentDescription = description,
+                tint = MaterialTheme.colors.onSecondary,
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(
+                        color = MaterialTheme.colors.secondary, shape = CircleShape
+                    )
+                    .padding(8.dp)
+            )
         }
     }
 }

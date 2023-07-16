@@ -1,8 +1,13 @@
 package com.ps.bluechat.presentation.theme
-
 import androidx.compose.ui.graphics.Color
 
-val Purple200 = Color(0xFFBB86FC)
-val Purple500 = Color(0xFF6200EE)
-val Purple700 = Color(0xFF3700B3)
-val Teal200 = Color(0xFF03DAC5)
+val DarkSurfaceStart = Color(0xFF23262E)
+val DarkSurfaceEnd = Color(0xFF212329)
+
+val Purple = Color(0xFF5340C7)
+val LightBlueGrey = Color(0xFFF6F4F4)
+val AccentViolet = Color(0xFF5643C9)
+val TextBlack = Color(0xFF111111)
+val DarkGrey = Color(0xFF282C31)
+val SuperLightGrey = Color(0xFFE5E5E5)
+val NormalGrey = Color(0xFF53565B)

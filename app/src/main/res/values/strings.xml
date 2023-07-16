@@ -6,7 +6,17 @@
     <string name="paired_devices">Paired Devices</string>
     <string name="available_devices">Available Devices</string>
     <string name="rename_device">Rename device</string>
+    <string name="cant_connect_to_not_paired_device">Cannot connect to not paired device</string>
+    <string name="connecting">Connecting…</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
+    <string name="connection_failed">Connection Failed</string>
+    <string name="permission_error">Missing permission error</string>
+    <string name="error_timeout">Timeout…</string>
     <string name="other_nearby_devices_can_see_this_name">Other nearby devices can see this name.</string>
+    <string name="invisibility_mode">Invisibility Mode 🥷🏿</string>
+    <string name="discoverability">Discoverability</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="start_server">Start Server</string>
 </resources>
