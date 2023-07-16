@@ -48,7 +48,7 @@ fun BluetoothActionSelector(
                                 .padding(top = 8.dp, bottom = 8.dp)
                         )
                     }
-                    ScanningState.NOT_DISCOVERING -> {
+                    else -> {
                         MenuActionButton(
                             icon = Icons.Default.PlayArrow,
                             description = context.getString(R.string.start_scan),
@@ -60,7 +60,6 @@ fun BluetoothActionSelector(
                                 .padding(top = 8.dp, bottom = 8.dp)
                         )
                     }
-                    else -> {}
                 }
 
 

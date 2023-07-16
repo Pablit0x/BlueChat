@@ -35,9 +35,9 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             val isDeviceAlreadyPaired = pairedDevices.value.any { it == newDevice }
             if (existingDevice || isDeviceAlreadyPaired) devices else devices + newDevice
         }
-    }, onStateChanged = { isConnected, bluetoothDevice ->
+    }, onStateChanged = { connectionState, bluetoothDevice ->
         if (bluetoothAdapter?.bondedDevices?.contains(bluetoothDevice) == true) {
-            _isConnected.update { isConnected }
+            _connectionState.update { connectionState }
         } else {
             CoroutineScope(Dispatchers.IO).launch {
                 _errors.tryEmit(context.getString(R.string.cant_connect_to_not_paired_device))
@@ -78,7 +78,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     private val _pairedDevices = MutableStateFlow<List<BluetoothDeviceDomain>>(emptyList())
     private val _isBluetoothEnabled = MutableStateFlow(false)
     private val _isDeviceDiscoverable = MutableStateFlow(false)
-    private val _isConnected = MutableStateFlow(false)
+    private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
     private val _errors = MutableSharedFlow<String>()
 
 
@@ -106,8 +106,8 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     override val isDeviceDiscoverable: StateFlow<Boolean>
         get() = _isDeviceDiscoverable.asStateFlow()
 
-    override val isConnected: StateFlow<Boolean>
-        get() = _isConnected.asStateFlow()
+    override val connectionState: StateFlow<ConnectionState>
+        get() = _connectionState.asStateFlow()
 
     override val errors: SharedFlow<String>
         get() = _errors.asSharedFlow()
@@ -116,13 +116,14 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     override fun startBluetoothServer(): Flow<ConnectionResult> {
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                throw SecurityException("No BLUETOOTH_CONNECT permission")
+                throw SecurityException(context.getString(R.string.bluetooth_denied))
             }
 
             currentServerSocket = bluetoothAdapter?.listenUsingRfcommWithServiceRecord(
                 Constants.SERVICE_NAME, UUID.fromString(Constants.SERVICE_UUID)
             )
 
+            emit(ConnectionResult.ConnectionOpen)
             currentClientSocket = currentServerSocket?.accept(10000)
             emit(ConnectionResult.ConnectionEstablished)
             currentClientSocket?.let {
@@ -141,7 +142,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                throw SecurityException("No BLUETOOTH_CONNECT permission")
+                throw SecurityException(context.getString(R.string.bluetooth_denied))
             }
 
             currentClientSocket = bluetoothAdapter?.getRemoteDevice(device.address)
@@ -151,6 +152,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
             stopScanning()
 
+            emit(ConnectionResult.ConnectionRequest)
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
@@ -158,15 +160,18 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
                     BluetoothDataTransferService(socket).also {
                         dataTransferService = it
-                        emitAll(
-                            it.listenForIncomingMessages()
-                            .map { message ->
-                                ConnectionResult.TransferSucceeded(message) })
+                        emitAll(it.listenForIncomingMessages().map { message ->
+                            ConnectionResult.TransferSucceeded(message)
+                        })
                     }
                 } catch (e: IOException) {
-                    socket.close()
-                    currentClientSocket = null
-                    emit(ConnectionResult.Error("Connection was interrupted"))
+                    emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
+                    try {
+                        socket.close()
+                        currentClientSocket = null
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }.onCompletion {
@@ -175,10 +180,9 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override suspend fun trySendMessage(message: String): BluetoothMessage? {
-        if(!hasPermission(Manifest.permission.BLUETOOTH_CONNECT))
-            return null
+        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return null
 
-        if(dataTransferService == null){
+        if (dataTransferService == null) {
             return null
         }
 
@@ -319,7 +323,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun updateDeviceName() {
-        _deviceName.update { bluetoothAdapter?.name ?: "No Name" }
+        _deviceName.update { bluetoothAdapter?.name ?: context.getString(R.string.no_name) }
     }
 
     private fun hasPermission(permission: String): Boolean {

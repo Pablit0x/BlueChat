@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
 
@@ -38,12 +39,9 @@ fun ChatScreen(
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    when {
-        state.isConnected -> {}
-        state.isConnecting -> {}
-        else -> {
-            direction.navigateBackToHomeScreen()
-        }
+    when(state.connectionState) {
+        ConnectionState.IDLE -> {direction.navigateBackToHomeScreen()}
+        else -> {}
     }
 
     Column(

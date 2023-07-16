@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
+import com.ps.bluechat.domain.chat.ConnectionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -23,8 +24,8 @@ class BluetoothViewModel @Inject constructor(
 
     init {
 
-        bluetoothController.isConnected.onEach { isConnected ->
-            _state.update { it.copy(isConnected = isConnected) }
+        bluetoothController.connectionState.onEach { connectionState ->
+            _state.update { it.copy(connectionState = connectionState) }
         }.launchIn(viewModelScope)
 
         bluetoothController.errors.onEach { error ->
@@ -63,7 +64,7 @@ class BluetoothViewModel @Inject constructor(
         state.copy(
             isBluetoothEnabled = isBluetoothEnabled,
             isDeviceDiscoverable = isDeviceDiscoverable,
-            messages = if (state.isConnected) state.messages else emptyList()
+            messages = if (state.connectionState == ConnectionState.CONNECTION_ACTIVE) state.messages else emptyList()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
@@ -79,20 +80,20 @@ class BluetoothViewModel @Inject constructor(
 
     fun observeIncomingConnections() {
         Log.d(className, "observeIncomingConnections()")
-        _state.update { it.copy(isConnecting = true) }
+        _state.update { it.copy(connectionState = ConnectionState.CONNECTION_OPEN) }
         deviceConnectionJob = bluetoothController.startBluetoothServer().observe()
     }
 
     fun connectToDevice(device: BluetoothDeviceDomain) {
         Log.d(className, "connectToDevice(): ${device.deviceName}")
-        _state.update { it.copy(isConnecting = true) }
+        _state.update { it.copy(connectionState = ConnectionState.CONNECTION_REQUEST) }
         deviceConnectionJob = bluetoothController.connectToDevice(device).observe()
     }
 
     fun disconnectDevice() {
         deviceConnectionJob?.cancel()
         bluetoothController.closeConnection()
-        _state.update { it.copy(isConnecting = false, isConnected = false) }
+        _state.update { it.copy(connectionState = ConnectionState.IDLE) }
     }
 
     fun sendMessage(message: String) {
@@ -133,17 +134,32 @@ class BluetoothViewModel @Inject constructor(
     private fun Flow<ConnectionResult>.observe(): Job {
         return onEach { result ->
             when (result) {
+                ConnectionResult.ConnectionRequest -> {
+                    _state.update {
+                        it.copy(
+                            connectionState = ConnectionState.CONNECTION_REQUEST
+                        )
+                    }
+                }
+                ConnectionResult.ConnectionOpen -> {
+                    _state.update {
+                        it.copy(
+                            connectionState = ConnectionState.CONNECTION_OPEN
+                        )
+                    }
+
+                }
                 ConnectionResult.ConnectionEstablished -> {
                     _state.update {
                         it.copy(
-                            isConnected = true, isConnecting = false, errorMessage = null
+                            connectionState = ConnectionState.CONNECTION_ACTIVE, errorMessage = null
                         )
                     }
                 }
                 is ConnectionResult.Error -> {
                     _state.update {
                         it.copy(
-                            isConnected = false, isConnecting = false, errorMessage = result.message
+                            connectionState = ConnectionState.IDLE, errorMessage = result.message
                         )
                     }
                 }
@@ -159,7 +175,7 @@ class BluetoothViewModel @Inject constructor(
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    isConnected = false, isConnecting = false
+                    connectionState = ConnectionState.IDLE
                 )
             }
         }.launchIn(viewModelScope)

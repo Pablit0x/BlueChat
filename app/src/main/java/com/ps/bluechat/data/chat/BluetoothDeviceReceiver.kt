@@ -6,10 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import com.ps.bluechat.domain.chat.ConnectionState
 
 class BluetoothDeviceReceiver(
     private val onDeviceFound : (BluetoothDevice) -> Unit,
-    private val onStateChanged: (isConnected: Boolean, BluetoothDevice) -> Unit
+    private val onStateChanged: (connectionState: ConnectionState, BluetoothDevice) -> Unit
 ) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         val intentAction = intent?.action
@@ -24,8 +25,8 @@ class BluetoothDeviceReceiver(
         }
 
         when(intentAction){
-            BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(true, device ?: return)
-            BluetoothDevice.ACTION_ACL_DISCONNECTED -> onStateChanged(false, device ?: return)
+            BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(ConnectionState.CONNECTION_ACTIVE, device ?: return)
+            BluetoothDevice.ACTION_ACL_DISCONNECTED -> onStateChanged(ConnectionState.IDLE, device ?: return)
             BluetoothDevice.ACTION_FOUND -> device?.let(onDeviceFound)
         }
     }
