@@ -54,7 +54,8 @@ fun NavGraph(
                 onDiscoverabilityEnable = viewModel::enableDiscoverability,
                 onDiscoverabilityDisable = viewModel::disableDiscoverability,
                 onStartConnecting = viewModel::connectToDevice,
-                onStartServer = viewModel::observeIncomingConnections
+                onStartServer = viewModel::observeIncomingConnections,
+                clearErrorMessage = viewModel::clearErrorMessage
             )
         }
         composable(
@@ -71,7 +72,6 @@ fun NavGraph(
             ChatScreen(
                 direction = direction,
                 state = state,
-                recipientName = state.connectedDevice?.deviceName,
                 onDisconnect = viewModel::disconnectDevice,
                 onSendMessage = viewModel::sendMessage
             )

@@ -11,8 +11,6 @@ data class BluetoothUiState(
     val isBluetoothEnabled: Boolean = false,
     val isDeviceDiscoverable: Boolean = false,
     val connectionState: ConnectionState = ConnectionState.IDLE,
-    val isConnected: Boolean = false,
-    val isConnecting: Boolean = false,
     val scanningState: ScanningState = ScanningState.IDLE,
     val scannedDevices: List<BluetoothDeviceDomain> = emptyList(),
     val pairedDevices : List<BluetoothDeviceDomain> = emptyList(),

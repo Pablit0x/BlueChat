@@ -1,6 +1,7 @@
 package com.ps.bluechat.presentation.components
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.*
@@ -8,7 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,22 +41,30 @@ fun DeviceScreen(
     onDiscoverabilityEnable: () -> Unit,
     onDiscoverabilityDisable: () -> Unit,
     onBluetoothEnable: () -> Unit,
-    onBluetoothDisable: () -> Unit
+    onBluetoothDisable: () -> Unit,
+    clearErrorMessage: () -> Unit
 
 ) {
-    val context: Context = LocalContext.current
-    var connectionState by remember{mutableStateOf(ConnectionState.IDLE)}
-    val viewModel = hiltViewModel<BluetoothViewModel>()
+
+    var isPopupDisplayed by remember { mutableStateOf(false) }
+    var popupMessage by remember { mutableStateOf("") }
+    var connectionState by remember { mutableStateOf(ConnectionState.IDLE) }
+
+    var fabHeight by remember {
+        mutableStateOf(0)
+    }
+
+    val heightInDp = with(LocalDensity.current) { fabHeight.toDp() }
 
     LaunchedEffect(key1 = state.errorMessage) {
         state.errorMessage?.let { message ->
-            Toasty.error(context, message, Toasty.LENGTH_SHORT).show()
-            viewModel.resetErrorMessage()
+            popupMessage = message
+            isPopupDisplayed = true
         }
     }
 
-    LaunchedEffect(key1 = state.connectionState){
-        connectionState = when(state.connectionState) {
+    LaunchedEffect(key1 = state.connectionState) {
+        connectionState = when (state.connectionState) {
             ConnectionState.CONNECTION_OPEN -> ConnectionState.CONNECTION_OPEN
             ConnectionState.CONNECTION_REQUEST -> ConnectionState.CONNECTION_REQUEST
             ConnectionState.CONNECTION_ACTIVE -> ConnectionState.CONNECTION_ACTIVE
@@ -112,6 +123,9 @@ fun DeviceScreen(
         else -> {
             Scaffold(floatingActionButton = {
                 BluetoothActionSelector(
+                    modifier = Modifier.onGloballyPositioned {
+                        fabHeight = it.size.height
+                    },
                     scanningState = state.scanningState,
                     onStartScan = onStartScan,
                     onStopScan = onStopScan,
@@ -139,8 +153,7 @@ fun DeviceScreen(
                     )
 
                     DeviceNameField(
-                        deviceName = state.deviceName
-                            ?: stringResource(R.string.no_name),
+                        deviceName = state.deviceName ?: stringResource(R.string.no_name),
                         direction = direction
                     )
                     Divider(color = Color.DarkGray, thickness = 1.dp)
@@ -157,6 +170,25 @@ fun DeviceScreen(
                         onCreateBond = onCreateBond,
                         onRemoveBond = onRemoveBond
                     )
+                }
+
+
+                if (isPopupDisplayed) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = heightInDp + 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+                        ShowCustomPopupMessage(message = popupMessage,
+                            isError = true,
+                            duration = 2500,
+                            onStopDisplaying = {
+                                isPopupDisplayed = it
+                                clearErrorMessage()
+                            })
+                    }
                 }
             }
         }

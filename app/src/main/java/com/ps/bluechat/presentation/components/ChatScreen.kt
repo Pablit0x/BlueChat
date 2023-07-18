@@ -1,12 +1,14 @@
 package com.ps.bluechat.presentation.components
 
-import android.app.ProgressDialog.show
 import android.content.Context
-import android.view.Gravity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
@@ -19,7 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -30,38 +32,59 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
-import es.dmoral.toasty.Toasty
+import kotlinx.coroutines.delay
+import com.ps.bluechat.presentation.theme.Colors.Companion.DarkGrey
+import com.ps.bluechat.presentation.theme.Colors.Companion.SuccessGreen
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     direction: Direction,
-    recipientName: String?,
     state: BluetoothUiState,
     onDisconnect: () -> Unit,
     onSendMessage: (String) -> Unit
 ) {
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val context: Context = LocalContext.current
+
     val message = rememberSaveable {
         mutableStateOf("")
     }
 
-    val isTextFieldEnabled by remember { mutableStateOf(true) }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val context: Context = LocalContext.current
+    var isPopupDisplayed by remember {
+        mutableStateOf(false)
+    }
+    var popupMessage by remember {
+        mutableStateOf("")
+    }
+
+    var isPopupWarning by remember {
+        mutableStateOf(false)
+    }
+
+    val recipientName = rememberSaveable {
+        state.connectedDevice?.deviceName ?: context.getString(
+            R.string.unknown
+        )
+    }
+
+    var isTextFieldEnabled by remember { mutableStateOf(true) }
 
     LaunchedEffect(key1 = state.connectionState) {
         when (state.connectionState) {
             ConnectionState.IDLE -> {
-                Toasty.warning(
-                    context,
-                    "${recipientName ?: context.getString(R.string.unknown)} " + context.getString(R.string.has_disconnected_from_chat),
-                    Toasty.LENGTH_LONG
-                ).show()
+                isTextFieldEnabled = false
+                popupMessage =
+                    "$recipientName " + context.getString(R.string.has_disconnected_from_chat)
+                isPopupWarning = true
+                isPopupDisplayed = true
             }
             ConnectionState.CONNECTION_ACTIVE -> {
-                val toast = Toasty.success(context, context.getString(R.string.connected), Toasty.LENGTH_SHORT)
-                toast.setGravity(Gravity.BOTTOM, 0, 300)
-                toast.show()
+                isTextFieldEnabled = true
+                popupMessage = context.getString(R.string.connected)
+                isPopupWarning = false
+                isPopupDisplayed = true
             }
             else -> {}
         }
@@ -72,14 +95,12 @@ fun ChatScreen(
             containerColor = MaterialTheme.colors.background
         ), title = {
             Text(
-                text = recipientName ?: stringResource(id = R.string.messages),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                text = recipientName, fontSize = 24.sp, fontWeight = FontWeight.Bold
             )
         }, actions = {
             IconButton(onClick = {
-                direction.navigateBackToHomeScreen()
                 onDisconnect()
+                direction.navigateBackToHomeScreen()
             }) {
                 Icon(
                     imageVector = Icons.Default.ExitToApp, contentDescription = null
@@ -92,7 +113,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Divider(color = Color.DarkGray, thickness = 1.dp)
+            Divider(color = com.ps.bluechat.presentation.theme.Colors.NormalGrey, thickness = 1.dp)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,7 +121,7 @@ fun ChatScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                itemsIndexed(items = state.messages) { index, message ->
+                items(items = state.messages) { message ->
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -112,12 +133,18 @@ fun ChatScreen(
                     }
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .gradientSurface()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
+                if (isPopupDisplayed) {
+                    ShowCustomPopupMessage(message = popupMessage,
+                        isError = isPopupWarning,
+                        duration = 2500L,
+                        onStopDisplaying = { isPopupDisplayed = it })
+                }
+
                 TextField(
                     value = message.value,
                     onValueChange = { message.value = it },
@@ -141,7 +168,9 @@ fun ChatScreen(
                     placeholder = { Text(text = stringResource(id = R.string.send_message)) },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(16.dp)
                         .height(65.dp)
+                        .gradientSurface()
                 )
             }
         }
@@ -150,4 +179,37 @@ fun ChatScreen(
 
 fun formatMessage(msg: String): String {
     return msg.replace(Regex("\\s+"), " ").trim()
+}
+
+@Composable
+fun ShowCustomPopupMessage(
+    message: String, isError: Boolean, duration: Long, onStopDisplaying: (Boolean) -> Unit
+) {
+    var shouldDisplay by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(true) {
+        delay(duration)
+        shouldDisplay = false
+        onStopDisplaying(false)
+    }
+
+    AnimatedVisibility(visible = shouldDisplay) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .clip(shape = RoundedCornerShape(20))
+                .background(color = if (isError) MaterialTheme.colors.error else SuccessGreen)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = message,
+                fontSize = 18.sp,
+                color = if (isError) MaterialTheme.colors.onError else MaterialTheme.colors.onPrimary
+            )
+        }
+    }
 }

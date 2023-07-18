@@ -22,6 +22,7 @@ import com.ps.bluechat.domain.chat.ScanningState
 @ExperimentalMaterialApi
 @Composable
 fun BluetoothActionSelector(
+    modifier : Modifier = Modifier,
     scanningState: ScanningState,
     onStartScan: () -> Unit,
     onStopScan: () -> Unit,
@@ -31,6 +32,7 @@ fun BluetoothActionSelector(
     var isMenuExtended by remember { mutableStateOf(false) }
 
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom
     ) {
         AnimatedVisibility(visible = isMenuExtended, modifier = Modifier.padding(bottom = 16.dp)) {

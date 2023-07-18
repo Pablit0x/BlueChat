@@ -30,6 +30,7 @@ class BluetoothViewModel @Inject constructor(
         }.launchIn(viewModelScope)
 
         bluetoothController.errors.onEach { error ->
+            Log.d("****WHY***","WTF!!! $error")
             _state.update {
                 it.copy(
                     errorMessage = error
@@ -169,6 +170,7 @@ class BluetoothViewModel @Inject constructor(
                     }
                 }
                 is ConnectionResult.Error -> {
+                    Log.d("****WHY***","OMG")
                     _state.update {
                         it.copy(
                             connectionState = ConnectionState.IDLE, errorMessage = result.message
@@ -187,13 +189,13 @@ class BluetoothViewModel @Inject constructor(
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    connectionState = ConnectionState.IDLE
+                    connectionState = ConnectionState.IDLE, errorMessage = null
                 )
             }
         }.launchIn(viewModelScope)
     }
 
-    fun resetErrorMessage(){
+    fun clearErrorMessage(){
         _state.update {
             it.copy(
                 errorMessage = null

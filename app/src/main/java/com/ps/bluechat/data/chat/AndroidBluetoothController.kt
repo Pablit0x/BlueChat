@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import androidx.compose.ui.res.stringResource
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.util.Constants
@@ -38,18 +39,12 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             _connectionState.update { connectionState }
             when (connectionState) {
                 ConnectionState.CONNECTION_ACTIVE -> _connectedDevice.update { bluetoothDevice.toBluetoothDeviceDomain() }
-                else -> {
-                    _connectedDevice.update { null }
-                }
-            }
-        } else {
-            CoroutineScope(Dispatchers.IO).launch {
-                _errors.tryEmit(context.getString(R.string.cant_connect_to_not_paired_device))
+                ConnectionState.IDLE -> _connectedDevice.update { null }
+                else -> {}
             }
         }
-    }, onBondStateChanged = {
-        updatePairedDevices()
-    })
+    }, onBondStateChanged = { updatePairedDevices() }
+    )
 
 
     private val bluetoothAdapterReceiver =
@@ -86,7 +81,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     private val _isBluetoothEnabled = MutableStateFlow(false)
     private val _isDeviceDiscoverable = MutableStateFlow(false)
     private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
-    private val _errors = MutableSharedFlow<String>()
+    private val _errors = MutableStateFlow<String?>(null)
 
 
     init {
@@ -119,8 +114,8 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     override val connectionState: StateFlow<ConnectionState>
         get() = _connectionState.asStateFlow()
 
-    override val errors: SharedFlow<String>
-        get() = _errors.asSharedFlow()
+    override val errors: StateFlow<String?>
+        get() = _errors.asStateFlow()
 
 
     override fun startBluetoothServer(): Flow<ConnectionResult> {
@@ -155,8 +150,6 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
             }
 
-            var success = false
-
             currentClientSocket = bluetoothAdapter?.getRemoteDevice(device.address)
                 ?.createRfcommSocketToServiceRecord(
                     UUID.fromString(Constants.SERVICE_UUID)
@@ -165,12 +158,12 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             stopScanning()
 
             emit(ConnectionResult.ConnectionRequest)
+            var isSuccess = false
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
                     emit(ConnectionResult.ConnectionEstablished)
-                    success = true
-
+                    isSuccess = true
                     BluetoothDataTransferService(socket).also {
                         dataTransferService = it
                         emitAll(it.listenForIncomingMessages().map { message ->
@@ -178,13 +171,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                         })
                     }
                 } catch (e: IOException) {
-                    if(!success) emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
-                    try {
-                        socket.close()
-                        currentClientSocket = null
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
+                    socket.close()
+                    currentClientSocket = null
+                    if(!isSuccess)
+                        emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
                 }
             }
         }.onCompletion {
