@@ -9,40 +9,46 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.*
-import com.ps.util.Constants
+import com.ps.bluechat.util.Constants
+import com.ps.bluechat.util.Constants.TAG
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.IOException
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
 import java.util.*
 
 
-@SuppressLint("MissingPermission")
+@SuppressLint("MissingPermission", "HardwareIds")
 class AndroidBluetoothController(private val context: Context) : BluetoothController {
 
     private val bluetoothDeviceReceiver = BluetoothDeviceReceiver(onDeviceFound = { foundDevice ->
         _scannedDevices.update { devices ->
             val newDevice = foundDevice.toBluetoothDeviceDomain()
-            val existingDevice = devices.any {
-                it.address == newDevice.address
-            }
-            val isDeviceAlreadyPaired = pairedDevices.value.any { it == newDevice }
+            val existingDevice = devices.any { it.address == newDevice.address }
+            val isDeviceAlreadyPaired =
+                bluetoothAdapter?.bondedDevices?.any { it.address == newDevice.address } ?: false
             if (existingDevice || isDeviceAlreadyPaired) devices else devices + newDevice
         }
     }, onStateChanged = { connectionState, bluetoothDevice ->
         if (bluetoothAdapter?.bondedDevices?.contains(bluetoothDevice) == true) {
             _connectionState.update { connectionState }
+            when (connectionState) {
+                ConnectionState.CONNECTION_ACTIVE -> _connectedDevice.update { bluetoothDevice.toBluetoothDeviceDomain() }
+                else -> {
+                    _connectedDevice.update { null }
+                }
+            }
         } else {
             CoroutineScope(Dispatchers.IO).launch {
                 _errors.tryEmit(context.getString(R.string.cant_connect_to_not_paired_device))
             }
         }
+    }, onBondStateChanged = {
+        updatePairedDevices()
     })
 
 
@@ -73,9 +79,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
 
     private val _deviceName = MutableStateFlow<String?>(null)
+    private val _connectedDevice = MutableStateFlow<BluetoothDeviceDomain?>(null)
     private val _scanningState = MutableStateFlow(ScanningState.IDLE)
     private val _scannedDevices = MutableStateFlow<List<BluetoothDeviceDomain>>(emptyList())
-    private val _pairedDevices = MutableStateFlow<List<BluetoothDeviceDomain>>(emptyList())
+    private val _pairedDevices = MutableStateFlow<List<BluetoothDeviceDomain>>(mutableListOf())
     private val _isBluetoothEnabled = MutableStateFlow(false)
     private val _isDeviceDiscoverable = MutableStateFlow(false)
     private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
@@ -90,6 +97,9 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
     override val deviceName: StateFlow<String?>
         get() = _deviceName.asStateFlow()
+
+    override val connectedDevice: StateFlow<BluetoothDeviceDomain?>
+        get() = _connectedDevice.asStateFlow()
 
     override val scanningState: StateFlow<ScanningState>
         get() = _scanningState.asStateFlow()
@@ -145,6 +155,8 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
             }
 
+            var success = false
+
             currentClientSocket = bluetoothAdapter?.getRemoteDevice(device.address)
                 ?.createRfcommSocketToServiceRecord(
                     UUID.fromString(Constants.SERVICE_UUID)
@@ -157,6 +169,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                 try {
                     socket.connect()
                     emit(ConnectionResult.ConnectionEstablished)
+                    success = true
 
                     BluetoothDataTransferService(socket).also {
                         dataTransferService = it
@@ -165,7 +178,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                         })
                     }
                 } catch (e: IOException) {
-                    emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
+                    if(!success) emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
                     try {
                         socket.close()
                         currentClientSocket = null
@@ -206,9 +219,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         currentServerSocket = null
     }
 
+    @Suppress("DEPRECATION")
     override fun enableBluetooth() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(intent)
         } else {
@@ -216,9 +230,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         }
     }
 
+    @Suppress("DEPRECATION")
     override fun disableBluetooth() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val intent = Intent("android.bluetooth.adapter.action.REQUEST_DISABLE");
+            val intent = Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(intent)
         } else {
@@ -240,16 +255,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
     override fun registerBluetoothDeviceReceiver() {
         context.registerReceiver(bluetoothDeviceReceiver, IntentFilter().apply {
-            addAction(BluetoothDevice.ACTION_NAME_CHANGED)
             addAction(BluetoothDevice.ACTION_FOUND)
-            addAction(BluetoothDevice.ACTION_PAIRING_REQUEST)
-            addAction(BluetoothDevice.ACTION_UUID)
             addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
             addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
-            addAction(BluetoothDevice.ACTION_ALIAS_CHANGED)
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-            addAction(BluetoothDevice.ACTION_CLASS_CHANGED)
 
         })
 
@@ -259,8 +268,6 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
-
-        updatePairedDevices()
         _scannedDevices.update { emptyList() }
         bluetoothAdapter?.startDiscovery()
     }
@@ -282,12 +289,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return
         }
+
         bluetoothAdapter?.bondedDevices?.map {
             it.toBluetoothDeviceDomain()
         }?.also { pairedDevices ->
-            _scannedDevices.update { scannedDevices ->
-                scannedDevices.subtract(pairedDevices).toList()
-            }
             _pairedDevices.update { pairedDevices }
         }
     }
@@ -297,14 +302,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun changeDeviceName(deviceName: String) {
-        if (!hasPermission(Manifest.permission.BLUETOOTH_ADMIN)) {
-            return
-        }
 
         while (bluetoothAdapter?.name != deviceName) {
             bluetoothAdapter?.name = deviceName
         }
-
         _deviceName.update { deviceName }
     }
 
@@ -329,4 +330,27 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     private fun hasPermission(permission: String): Boolean {
         return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
+
+    override fun removeBond(device: BluetoothDeviceDomain) {
+        try {
+            val deviceToRemove = bluetoothAdapter?.getRemoteDevice(device.address)
+            deviceToRemove?.let {
+                deviceToRemove::class.java.getMethod("removeBond").invoke(deviceToRemove)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Removing bond has been failed. ${e.message}")
+        }
+    }
+
+    override fun createBond(device: BluetoothDeviceDomain) {
+        try {
+            val deviceToBond = bluetoothAdapter?.getRemoteDevice(device.address)
+            deviceToBond?.let {
+                deviceToBond.createBond()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Creating bond has been failed. ${e.message}")
+        }
+    }
+
 }

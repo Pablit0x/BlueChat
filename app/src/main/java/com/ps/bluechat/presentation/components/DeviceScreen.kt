@@ -1,30 +1,27 @@
 package com.ps.bluechat.presentation.components
 
 import android.content.Context
-import android.util.Log
-import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
+import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
-import com.talhafaki.composablesweettoast.main.SweetToast
-import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
+import com.ps.bluechat.presentation.BluetoothViewModel
 import es.dmoral.toasty.Toasty
+import kotlinx.coroutines.flow.flow
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -32,6 +29,8 @@ import es.dmoral.toasty.Toasty
 fun DeviceScreen(
     direction: Direction,
     state: BluetoothUiState,
+    onCreateBond: (BluetoothDeviceDomain) -> Unit,
+    onRemoveBond: (BluetoothDeviceDomain) -> Unit,
     onStartConnecting: (BluetoothDeviceDomain) -> Unit,
     onStartServer: () -> Unit,
     onStartScan: () -> Unit,
@@ -43,14 +42,26 @@ fun DeviceScreen(
 
 ) {
     val context: Context = LocalContext.current
+    var connectionState by remember{mutableStateOf(ConnectionState.IDLE)}
+    val viewModel = hiltViewModel<BluetoothViewModel>()
 
     LaunchedEffect(key1 = state.errorMessage) {
         state.errorMessage?.let { message ->
-            Toasty.error(context, message, Toast.LENGTH_SHORT).show()
+            Toasty.error(context, message, Toasty.LENGTH_SHORT).show()
+            viewModel.resetErrorMessage()
         }
     }
 
-    when (state.connectionState) {
+    LaunchedEffect(key1 = state.connectionState){
+        connectionState = when(state.connectionState) {
+            ConnectionState.CONNECTION_OPEN -> ConnectionState.CONNECTION_OPEN
+            ConnectionState.CONNECTION_REQUEST -> ConnectionState.CONNECTION_REQUEST
+            ConnectionState.CONNECTION_ACTIVE -> ConnectionState.CONNECTION_ACTIVE
+            else -> ConnectionState.IDLE
+        }
+    }
+
+    when (connectionState) {
         ConnectionState.CONNECTION_OPEN -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -66,7 +77,7 @@ fun DeviceScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = context.getString(
+                    text = stringResource(
                         R.string.waiting_for_the_other_user_to_join
                     ), color = MaterialTheme.colors.onSurface, fontSize = 14.sp
                 )
@@ -87,7 +98,7 @@ fun DeviceScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = context.getString(
+                    text = stringResource(
                         R.string.joining_the_chat
                     ), color = MaterialTheme.colors.onSurface, fontSize = 14.sp
                 )
@@ -115,21 +126,21 @@ fun DeviceScreen(
 
                     ModeToggleField(
                         isOn = state.isBluetoothEnabled,
-                        modeName = context.getString(com.ps.bluechat.R.string.bluetooth),
+                        modeName = stringResource(R.string.bluetooth),
                         onEnable = onBluetoothEnable,
                         onDisable = onBluetoothDisable
                     )
 
                     ModeToggleField(
                         isOn = state.isDeviceDiscoverable,
-                        modeName = context.getString(com.ps.bluechat.R.string.discoverability),
+                        modeName = stringResource(R.string.discoverability),
                         onEnable = onDiscoverabilityEnable,
                         onDisable = onDiscoverabilityDisable
                     )
 
                     DeviceNameField(
                         deviceName = state.deviceName
-                            ?: context.getString(com.ps.bluechat.R.string.no_name),
+                            ?: stringResource(R.string.no_name),
                         direction = direction
                     )
                     Divider(color = Color.DarkGray, thickness = 1.dp)
@@ -142,7 +153,9 @@ fun DeviceScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        onRestartScan = onStartScan
+                        onRestartScan = onStartScan,
+                        onCreateBond = onCreateBond,
+                        onRemoveBond = onRemoveBond
                     )
                 }
             }

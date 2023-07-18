@@ -1,5 +1,6 @@
 package com.ps.bluechat.presentation
 
+import android.bluetooth.BluetoothDevice
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,6 +8,7 @@ import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
+import com.ps.bluechat.util.Constants.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -18,7 +20,6 @@ class BluetoothViewModel @Inject constructor(
     private val bluetoothController: BluetoothController
 ) : ViewModel() {
 
-    private val className = BluetoothViewModel::class.simpleName
     private val _state = MutableStateFlow(BluetoothUiState())
     private var deviceConnectionJob: Job? = null
 
@@ -59,33 +60,41 @@ class BluetoothViewModel @Inject constructor(
     val state = combine(
         bluetoothController.isBluetoothEnabled,
         bluetoothController.isDeviceDiscoverable,
+        bluetoothController.connectedDevice,
         combineState
-    ) { isBluetoothEnabled, isDeviceDiscoverable, state ->
+    ) { isBluetoothEnabled, isDeviceDiscoverable, connectedDevice, state ->
         state.copy(
             isBluetoothEnabled = isBluetoothEnabled,
             isDeviceDiscoverable = isDeviceDiscoverable,
-            messages = if (state.connectionState == ConnectionState.CONNECTION_ACTIVE) state.messages else emptyList()
+            connectedDevice = connectedDevice,
+            messages = state.messages
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
     fun startScan() {
-        Log.d(className, "startScan()")
+        Log.d(TAG, "startScan()")
         bluetoothController.startScanning()
+    }
+    fun createBond(device: BluetoothDeviceDomain){
+        bluetoothController.createBond(device = device)
+    }
+    fun removeBond(device: BluetoothDeviceDomain){
+        bluetoothController.removeBond(device = device)
     }
 
     fun stopScan() {
-        Log.d(className, "stopScan()")
+        Log.d(TAG, "stopScan()")
         bluetoothController.stopScanning()
     }
 
     fun observeIncomingConnections() {
-        Log.d(className, "observeIncomingConnections()")
+        Log.d(TAG, "observeIncomingConnections()")
         _state.update { it.copy(connectionState = ConnectionState.CONNECTION_OPEN) }
         deviceConnectionJob = bluetoothController.startBluetoothServer().observe()
     }
 
     fun connectToDevice(device: BluetoothDeviceDomain) {
-        Log.d(className, "connectToDevice(): ${device.deviceName}")
+        Log.d(TAG, "connectToDevice(): ${device.deviceName}")
         _state.update { it.copy(connectionState = ConnectionState.CONNECTION_REQUEST) }
         deviceConnectionJob = bluetoothController.connectToDevice(device).observe()
     }
@@ -110,7 +119,7 @@ class BluetoothViewModel @Inject constructor(
     }
 
     fun changeDeviceName(deviceName: String) {
-        Log.d(className, "changeDeviceName(): $deviceName")
+        Log.d(TAG, "changeDeviceName(): $deviceName")
         bluetoothController.changeDeviceName(deviceName = deviceName)
     }
 
@@ -137,14 +146,16 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionRequest -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_REQUEST
+                            connectionState = ConnectionState.CONNECTION_REQUEST,
+                            errorMessage = null
                         )
                     }
                 }
                 ConnectionResult.ConnectionOpen -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_OPEN
+                            connectionState = ConnectionState.CONNECTION_OPEN,
+                            errorMessage = null
                         )
                     }
 
@@ -152,7 +163,8 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionEstablished -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_ACTIVE, errorMessage = null
+                            connectionState = ConnectionState.CONNECTION_ACTIVE,
+                            errorMessage = null
                         )
                     }
                 }
@@ -179,6 +191,14 @@ class BluetoothViewModel @Inject constructor(
                 )
             }
         }.launchIn(viewModelScope)
+    }
+
+    fun resetErrorMessage(){
+        _state.update {
+            it.copy(
+                errorMessage = null
+            )
+        }
     }
 
     override fun onCleared() {

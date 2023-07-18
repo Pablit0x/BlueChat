@@ -1,8 +1,6 @@
 package com.ps.bluechat.domain.chat
 
-typealias BluetoothDeviceDomain = BluetoothDevice
-
-data class BluetoothDevice(
+data class BluetoothDeviceDomain(
     val deviceName: String?,
     val address: String
 )

@@ -45,6 +45,8 @@ fun NavGraph(
             DeviceScreen(
                 direction = direction,
                 state = state,
+                onCreateBond = viewModel::createBond,
+                onRemoveBond = viewModel::removeBond,
                 onStartScan = viewModel::startScan,
                 onStopScan = viewModel::stopScan,
                 onBluetoothEnable = viewModel::enableBluetooth,
@@ -69,6 +71,7 @@ fun NavGraph(
             ChatScreen(
                 direction = direction,
                 state = state,
+                recipientName = state.connectedDevice?.deviceName,
                 onDisconnect = viewModel::disconnectDevice,
                 onSendMessage = viewModel::sendMessage
             )

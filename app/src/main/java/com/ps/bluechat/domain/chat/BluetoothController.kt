@@ -1,5 +1,6 @@
 package com.ps.bluechat.domain.chat
 
+import android.bluetooth.BluetoothDevice
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -7,13 +8,13 @@ import kotlinx.coroutines.flow.StateFlow
 interface BluetoothController {
     val deviceName : StateFlow<String?>
     val scanningState: StateFlow<ScanningState>
+    val connectedDevice: StateFlow<BluetoothDeviceDomain?>
     val isBluetoothEnabled: StateFlow<Boolean>
     val isDeviceDiscoverable: StateFlow<Boolean>
     val connectionState: StateFlow<ConnectionState>
-    val scannedDevices : StateFlow<List<BluetoothDevice>>
-    val pairedDevices : StateFlow<List<BluetoothDevice>>
+    val scannedDevices : StateFlow<List<BluetoothDeviceDomain>>
+    val pairedDevices : StateFlow<List<BluetoothDeviceDomain>>
     val errors: SharedFlow<String>
-
 
 
     suspend fun trySendMessage(message: String) : BluetoothMessage?
@@ -31,4 +32,7 @@ interface BluetoothController {
     fun stopScanning()
     fun updateDeviceName()
     fun release()
+
+    fun createBond(device: BluetoothDeviceDomain)
+    fun removeBond(device: BluetoothDeviceDomain)
 }

@@ -3,6 +3,7 @@ package com.ps.bluechat.presentation.components
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
@@ -33,9 +34,9 @@ fun BluetoothActionSelector(
         horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom
     ) {
         AnimatedVisibility(visible = isMenuExtended, modifier = Modifier.padding(bottom = 16.dp)) {
-            Column {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
 
-                when(scanningState){
+                when (scanningState) {
                     ScanningState.DISCOVERING -> {
                         MenuActionButton(
                             icon = Icons.Default.Pause,
@@ -44,7 +45,6 @@ fun BluetoothActionSelector(
                                 onStopScan()
                             },
                             modifier = Modifier
-                                .fillMaxWidth()
                                 .padding(top = 8.dp, bottom = 8.dp)
                         )
                     }
@@ -56,7 +56,6 @@ fun BluetoothActionSelector(
                                 onStartScan()
                             },
                             modifier = Modifier
-                                .fillMaxWidth()
                                 .padding(top = 8.dp, bottom = 8.dp)
                         )
                     }
@@ -78,7 +77,7 @@ fun BluetoothActionSelector(
         }
         IconButton(onClick = { isMenuExtended = !isMenuExtended }) {
             Icon(
-                imageVector = Icons.Default.MoreVert,
+                imageVector = if (isMenuExtended) Icons.Default.KeyboardArrowDown else Icons.Default.Menu,
                 contentDescription = "",
                 tint = MaterialTheme.colors.onSecondary,
                 modifier = Modifier
@@ -94,32 +93,27 @@ fun BluetoothActionSelector(
 fun MenuActionButton(
     icon: ImageVector, description: String, onClickAction: () -> Unit, modifier: Modifier = Modifier
 ) {
-    IconButton(
-        onClick = {
-            onClickAction()
-        },
+    Row(
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
     ) {
-        Row(
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier
-        ) {
 
-            Text(text = description)
+        Text(text = description)
 
-            Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-            Icon(
-                imageVector = icon,
-                contentDescription = description,
-                tint = MaterialTheme.colors.onSecondary,
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = MaterialTheme.colors.secondary, shape = CircleShape
-                    )
-                    .padding(8.dp)
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = MaterialTheme.colors.onSecondary,
+            modifier = Modifier
+                .size(42.dp)
+                .background(
+                    color = MaterialTheme.colors.secondary, shape = CircleShape
+                )
+                .padding(8.dp)
+                .clickable { onClickAction() }
+        )
     }
 }

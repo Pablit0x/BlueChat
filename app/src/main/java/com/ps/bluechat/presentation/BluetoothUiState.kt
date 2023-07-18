@@ -7,6 +7,7 @@ import com.ps.bluechat.domain.chat.ScanningState
 
 data class BluetoothUiState(
     val deviceName: String? = null,
+    val connectedDevice: BluetoothDeviceDomain? = null,
     val isBluetoothEnabled: Boolean = false,
     val isDeviceDiscoverable: Boolean = false,
     val connectionState: ConnectionState = ConnectionState.IDLE,

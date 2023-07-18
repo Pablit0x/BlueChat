@@ -32,7 +32,7 @@ import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.ps.bluechat.R
 import com.ps.bluechat.navigation.NavGraph
 import com.ps.bluechat.presentation.theme.BlueChatTheme
-import com.ps.util.Constants
+import com.ps.bluechat.util.Constants
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

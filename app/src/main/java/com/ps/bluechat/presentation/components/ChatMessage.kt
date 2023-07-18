@@ -31,7 +31,12 @@ fun ChatMessage(
         Text(message.time, color = MaterialTheme.colors.onBackground)
         Column(modifier = modifier
             .clip(
-                shape = RoundedCornerShape(40)
+                RoundedCornerShape(
+                    topStart = if (message.isFromLocalUser) 15.dp else 0.dp,
+                    topEnd = 15.dp,
+                    bottomStart = 15.dp,
+                    bottomEnd = if (message.isFromLocalUser) 0.dp else 15.dp
+                )
             )
             .background(
                 if(message.isFromLocalUser) Color(0xFF1982FC) else Color(0xFF53565B)

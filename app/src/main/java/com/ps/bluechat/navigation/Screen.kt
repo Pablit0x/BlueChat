@@ -1,6 +1,6 @@
 package com.ps.bluechat.navigation
 
-import com.ps.util.Constants
+import com.ps.bluechat.util.Constants
 
 sealed class Screen(val route : String){
     object HomeScreen : Screen(Constants.HOME_SCREEN)
