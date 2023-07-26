@@ -284,6 +284,9 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             it.toBluetoothDeviceDomain()
         }?.also { pairedDevices ->
             _pairedDevices.update { pairedDevices }
+            _scannedDevices.update { scannedDevices ->
+                scannedDevices.filter { !pairedDevices.contains(it) }
+            }
         }
     }
 

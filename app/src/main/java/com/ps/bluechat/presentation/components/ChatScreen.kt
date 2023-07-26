@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -71,6 +72,13 @@ fun ChatScreen(
 
     var isTextFieldEnabled by remember { mutableStateOf(true) }
 
+    val lazyColumnListState = rememberLazyListState()
+
+    LaunchedEffect(key1 = state.messages.size){
+        if(state.messages.size > 6)
+            lazyColumnListState.animateScrollToItem(state.messages.size - 1)
+    }
+
     LaunchedEffect(key1 = state.connectionState) {
         when (state.connectionState) {
             ConnectionState.IDLE -> {
@@ -119,7 +127,8 @@ fun ChatScreen(
                     .fillMaxWidth()
                     .weight(1f),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                state = lazyColumnListState
             ) {
                 items(items = state.messages) { message ->
                     Column(
@@ -161,7 +170,6 @@ fun ChatScreen(
                                 if (cleanedMsg.isNotBlank()) {
                                     onSendMessage(cleanedMsg)
                                     message.value = ""
-                                    keyboardController?.hide()
                                 }
                             })
                     },

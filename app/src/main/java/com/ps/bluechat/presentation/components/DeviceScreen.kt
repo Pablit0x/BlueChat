@@ -10,21 +10,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
-import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
-import com.ps.bluechat.presentation.BluetoothViewModel
-import es.dmoral.toasty.Toasty
-import kotlinx.coroutines.flow.flow
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -156,6 +150,7 @@ fun DeviceScreen(
                         deviceName = state.deviceName ?: stringResource(R.string.no_name),
                         direction = direction
                     )
+
                     Divider(color = Color.DarkGray, thickness = 1.dp)
 
                     BluetoothDeviceList(
@@ -171,7 +166,6 @@ fun DeviceScreen(
                         onRemoveBond = onRemoveBond
                     )
                 }
-
 
                 if (isPopupDisplayed) {
                     Column(

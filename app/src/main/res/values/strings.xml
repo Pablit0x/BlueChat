@@ -28,4 +28,6 @@
     <string name="start_server">Start Server</string>
     <string name="bluetooth_denied">Unable to proceed without Bluetooth permission.</string>
     <string name="dismiss">Dismiss</string>
+    <string name="info">Info</string>
+    <string name="forget_device">Forget Device</string>
 </resources>
