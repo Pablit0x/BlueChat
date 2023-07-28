@@ -10,21 +10,19 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import androidx.compose.ui.res.stringResource
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.util.Constants
-import com.ps.bluechat.util.Constants.TAG
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import java.io.IOException
 import java.util.*
 
 
 @SuppressLint("MissingPermission", "HardwareIds")
 class AndroidBluetoothController(private val context: Context) : BluetoothController {
+
+    private val tag = AndroidBluetoothController::class.simpleName
 
     private val bluetoothDeviceReceiver = BluetoothDeviceReceiver(onDeviceFound = { foundDevice ->
         _scannedDevices.update { devices ->
@@ -119,6 +117,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
 
     override fun startBluetoothServer(): Flow<ConnectionResult> {
+        Log.d(tag, "startBluetoothServer()")
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
@@ -145,6 +144,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
+        Log.d(tag, "connectToDevice(): $device")
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
@@ -183,6 +183,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override suspend fun trySendMessage(message: String): BluetoothMessage? {
+        Log.d(tag, "trySendMessage(): $message")
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return null
 
         if (dataTransferService == null) {
@@ -203,6 +204,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun closeConnection() {
+        Log.d(tag, "closeConnection()")
         currentServerSocket?.close()
         currentClientSocket?.close()
         currentClientSocket = null
@@ -211,6 +213,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
     @Suppress("DEPRECATION")
     override fun enableBluetooth() {
+        Log.d(tag, "enableBluetooth()")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -222,6 +225,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
 
     @Suppress("DEPRECATION")
     override fun disableBluetooth() {
+        Log.d(tag, "disableBluetooth()")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val intent = Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -232,11 +236,12 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun registerBluetoothAdapterReceiver() {
+        Log.d(tag, "registerBluetoothAdapterReceiver()")
         context.registerReceiver(bluetoothAdapterReceiver, IntentFilter().apply {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-            addAction(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
+//            addAction(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
             addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
         })
@@ -244,6 +249,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun registerBluetoothDeviceReceiver() {
+        Log.d(tag, "registerBluetoothDeviceReceiver()")
         context.registerReceiver(bluetoothDeviceReceiver, IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
@@ -255,6 +261,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun startScanning() {
+        Log.d(tag, "startScanning()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
@@ -263,6 +270,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun stopScanning() {
+        Log.d(tag, "stopScanning()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
@@ -270,12 +278,14 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun release() {
+        Log.d(tag, "release()")
         context.unregisterReceiver(bluetoothDeviceReceiver)
         context.unregisterReceiver(bluetoothAdapterReceiver)
         closeConnection()
     }
 
     private fun updatePairedDevices() {
+        Log.d(tag, "updatePairedDevices()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return
         }
@@ -295,6 +305,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun changeDeviceName(deviceName: String) {
+        Log.d(tag,"changeDeviceName(): $deviceName")
 
         while (bluetoothAdapter?.name != deviceName) {
             bluetoothAdapter?.name = deviceName
@@ -303,6 +314,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun enableDiscoverability() {
+        Log.d(tag, "enableDiscoverability()")
         val enableDiscoverabilityIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
         enableDiscoverabilityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         enableDiscoverabilityIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
@@ -310,6 +322,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun disableDiscoverability() {
+        Log.d(tag, "disableDiscoverability()")
         val disableDiscoverabilityIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
         disableDiscoverabilityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         disableDiscoverabilityIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1)
@@ -317,7 +330,10 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun updateDeviceName() {
-        _deviceName.update { bluetoothAdapter?.name ?: context.getString(R.string.no_name) }
+        val name = bluetoothAdapter?.name
+        Log.d(tag, "updateDeviceName(): $name")
+
+        _deviceName.update { name ?: context.getString(R.string.no_name) }
     }
 
     private fun hasPermission(permission: String): Boolean {
@@ -325,24 +341,26 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     }
 
     override fun removeBond(device: BluetoothDeviceDomain) {
+        Log.d(tag, "removeBond(): $device")
         try {
             val deviceToRemove = bluetoothAdapter?.getRemoteDevice(device.address)
             deviceToRemove?.let {
                 deviceToRemove::class.java.getMethod("removeBond").invoke(deviceToRemove)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Removing bond has been failed. ${e.message}")
+            Log.e(tag, "Removing bond has been failed. ${e.message}")
         }
     }
 
     override fun createBond(device: BluetoothDeviceDomain) {
+        Log.d(tag, "createBond(): $device")
         try {
             val deviceToBond = bluetoothAdapter?.getRemoteDevice(device.address)
             deviceToBond?.let {
                 deviceToBond.createBond()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Creating bond has been failed. ${e.message}")
+            Log.e(tag, "Creating bond has been failed. ${e.message}")
         }
     }
 

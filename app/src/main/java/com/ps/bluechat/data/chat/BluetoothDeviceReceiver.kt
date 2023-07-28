@@ -15,6 +15,9 @@ class BluetoothDeviceReceiver(
     private val onStateChanged: (connectionState: ConnectionState, BluetoothDevice) -> Unit,
     private val onBondStateChanged: () -> Unit
 ) : BroadcastReceiver() {
+
+    private val tag = BluetoothDeviceReceiver::class.simpleName
+
     @SuppressLint("MissingPermission")
     override fun onReceive(context: Context?, intent: Intent?) {
         val intentAction = intent?.action
@@ -27,7 +30,7 @@ class BluetoothDeviceReceiver(
             intent?.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
         }
 
-        Log.d(Constants.TAG, "onReceive(): {intentAction = $intentAction, device = $device}")
+        Log.d(tag, "onReceive(): {intentAction = $intentAction, device = $device}")
 
         when(intentAction){
             BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(ConnectionState.CONNECTION_ACTIVE, device ?: return)

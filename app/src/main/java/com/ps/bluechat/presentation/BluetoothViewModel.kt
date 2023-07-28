@@ -8,7 +8,6 @@ import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
-import com.ps.bluechat.util.Constants.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -19,6 +18,8 @@ import javax.inject.Inject
 class BluetoothViewModel @Inject constructor(
     private val bluetoothController: BluetoothController
 ) : ViewModel() {
+
+    private val tag = BluetoothViewModel::class.simpleName
 
     private val _state = MutableStateFlow(BluetoothUiState())
     private var deviceConnectionJob: Job? = null
@@ -72,40 +73,44 @@ class BluetoothViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
     fun startScan() {
-        Log.d(TAG, "startScan()")
+        Log.d(tag, "startScan()")
         bluetoothController.startScanning()
     }
     fun createBond(device: BluetoothDeviceDomain){
+        Log.d(tag, "createBond(): $device")
         bluetoothController.createBond(device = device)
     }
     fun removeBond(device: BluetoothDeviceDomain){
+        Log.d(tag, "removeBond(): $device")
         bluetoothController.removeBond(device = device)
     }
 
     fun stopScan() {
-        Log.d(TAG, "stopScan()")
+        Log.d(tag, "stopScan()")
         bluetoothController.stopScanning()
     }
 
     fun observeIncomingConnections() {
-        Log.d(TAG, "observeIncomingConnections()")
+        Log.d(tag, "observeIncomingConnections()")
         _state.update { it.copy(connectionState = ConnectionState.CONNECTION_OPEN) }
         deviceConnectionJob = bluetoothController.startBluetoothServer().observe()
     }
 
     fun connectToDevice(device: BluetoothDeviceDomain) {
-        Log.d(TAG, "connectToDevice(): ${device.deviceName}")
+        Log.d(tag, "connectToDevice(): ${device.deviceName}")
         _state.update { it.copy(connectionState = ConnectionState.CONNECTION_REQUEST) }
         deviceConnectionJob = bluetoothController.connectToDevice(device).observe()
     }
 
     fun disconnectDevice() {
+        Log.d(tag, "disconnectDevice")
         deviceConnectionJob?.cancel()
         bluetoothController.closeConnection()
         _state.update { it.copy(connectionState = ConnectionState.IDLE) }
     }
 
     fun sendMessage(message: String) {
+        Log.d(tag, "sendMessage(): $message")
         viewModelScope.launch {
             val bluetoothMessage = bluetoothController.trySendMessage(message = message)
             if (bluetoothMessage != null) {
@@ -119,24 +124,28 @@ class BluetoothViewModel @Inject constructor(
     }
 
     fun changeDeviceName(deviceName: String) {
-        Log.d(TAG, "changeDeviceName(): $deviceName")
+        Log.d(tag, "changeDeviceName(): $deviceName")
         bluetoothController.changeDeviceName(deviceName = deviceName)
     }
 
     fun enableBluetooth() {
+        Log.d(tag, "enableBluetooth()")
         bluetoothController.enableBluetooth()
     }
 
     fun disableBluetooth() {
+        Log.d(tag, "disableBluetooth()")
         bluetoothController.disableBluetooth()
     }
 
 
     fun enableDiscoverability() {
+        Log.d(tag, "enableDiscoverability()")
         bluetoothController.enableDiscoverability()
     }
 
     fun disableDiscoverability() {
+        Log.d(tag, "disableDiscoverability()")
         bluetoothController.disableDiscoverability()
     }
 
@@ -169,7 +178,6 @@ class BluetoothViewModel @Inject constructor(
                     }
                 }
                 is ConnectionResult.Error -> {
-                    Log.d("****WHY***","OMG")
                     _state.update {
                         it.copy(
                             connectionState = ConnectionState.IDLE, errorMessage = result.message
