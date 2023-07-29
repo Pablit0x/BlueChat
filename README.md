@@ -11,7 +11,7 @@ BlueChat is an Android application that enables users to send text messages and 
 - Send and receive images over Bluetooth.
 - Change device Bluetooth name.
 - Toggle Bluetooth on/off within the app.
-- Set Bluetooth discoverability.
+- Toggle Bluetooth discoverability within the app.
 - Scan for new Bluetooth devices.
 - Pair with new Bluetooth devices.
 - Unpair already paired devices.
@@ -22,8 +22,6 @@ BlueChat is an Android application that enables users to send text messages and 
 
 https://github.com/Pablit0x/BlueChat/assets/76017191/88442367-d77c-44df-a731-cd200caaa8a1
 
-Click on the image above to watch a video demo of the BlueChat app.
-
 ## Requirements
 
 - Android device with Bluetooth support or Emulator with support for Virtual Bluetooth.
@@ -33,13 +31,11 @@ Click on the image above to watch a video demo of the BlueChat app.
 
 To get started with BlueChat, follow these steps:
 
-1. Clone this repository to your local machine:
+1. Clone this repository to your local machine.
 
-git clone https://github.com/Pablit0x/BlueChat.git
+2. Open the project in Android Studio.
 
-3. Open the project in Android Studio.
-
-4. Build and run the application on your Android device or emulator.
+3. Build and run the application on your Android device or emulator.
 
 
 ## Libraries and Technologies Used
