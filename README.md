@@ -20,9 +20,7 @@ BlueChat is an Android application that enables users to send text messages and 
 
 ## Video Demo
 
-[[![BlueChat Video Demo]
-https://github.com/Pablit0x/BlueChat/assets/76017191/88442367-d77c-44df-a731-cd200caaa8a1](https://github.com/Pablit0x/BlueChat/assets/76017191/88442367-d77c-44df-a731-cd200caaa8a1
-)
+https://github.com/Pablit0x/BlueChat/assets/76017191/88442367-d77c-44df-a731-cd200caaa8a1
 
 Click on the image above to watch a video demo of the BlueChat app.
 
