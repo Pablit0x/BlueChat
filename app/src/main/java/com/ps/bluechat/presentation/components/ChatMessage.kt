@@ -24,11 +24,14 @@ fun ChatMessage(
     message: BluetoothMessage, modifier: Modifier = Modifier
 ) {
 
+    val isMessageAnImage = message.imageUri != null
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
     ) {
         Text(message.time, color = MaterialTheme.colors.onBackground)
+
         Column(
             modifier = modifier
                 .clip(
@@ -40,13 +43,13 @@ fun ChatMessage(
                     )
                 )
                 .background(
-                    if (message.imageUri != null) Color.Transparent
+                    if (isMessageAnImage) Color.Transparent
                     else if (message.isFromLocalUser) BlueChatColors.LocalMessageBubbleColor else BlueChatColors.RemoteMessageBubbleColor
                 )
-                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                .padding(top = 8.dp, bottom = 8.dp),
             horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
         ) {
-            if (message.imageUri != null) {
+            if (isMessageAnImage) {
                 AsyncImage(
                     model = message.imageUri,
                     contentDescription = null,
@@ -55,14 +58,16 @@ fun ChatMessage(
                         .widthIn(max = 200.dp)
                         .clip(
                             RoundedCornerShape(10)
-                        ).padding(start = (-16).dp, end = (-16).dp)
+                        )
                 )
             } else {
                 Text(
                     text = message.message,
                     fontSize = 18.sp,
                     color = MaterialTheme.colors.onPrimary,
-                    modifier = Modifier.widthIn(max = 300.dp)
+                    modifier = Modifier
+                        .widthIn(max = 300.dp)
+                        .padding(start = 16.dp, end = 16.dp)
                 )
             }
         }

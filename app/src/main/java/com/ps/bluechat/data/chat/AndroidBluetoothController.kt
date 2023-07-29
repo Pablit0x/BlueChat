@@ -219,9 +219,9 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             return null
         }
 
-        val desiredWidth = 200
-        val desiredHeight = 200
-        val quality = 30
+        val desiredWidth = 300
+        val desiredHeight = 300
+        val quality = 15
 
         // Convert the image URI to a Bitmap
         val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
