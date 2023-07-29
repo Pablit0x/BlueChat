@@ -50,4 +50,6 @@ git clone https://github.com/Pablit0x/BlueChat.git
 - Coroutines: For managing concurrency and asynchronous tasks.
 - Android Bluetooth API: For handling Bluetooth communication.
 - Coil: For async image loading.
+- Android Storage: For saving received images to the phone's internal storage.
+- Android System Photo Picker: For allowing users to select images from their device's gallery.
 
