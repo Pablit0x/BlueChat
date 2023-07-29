@@ -1,18 +1,22 @@
 package com.ps.bluechat.presentation.components
 
 import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,11 +24,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,20 +35,26 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
+import com.ps.bluechat.presentation.theme.BlueChatColors
 import kotlinx.coroutines.delay
-import com.ps.bluechat.presentation.theme.Colors.Companion.DarkGrey
-import com.ps.bluechat.presentation.theme.Colors.Companion.SuccessGreen
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.SuccessGreen
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     direction: Direction,
     state: BluetoothUiState,
     onDisconnect: () -> Unit,
-    onSendMessage: (String) -> Unit
+    onSendMessage: (String) -> Unit,
+    onUriSelected: (Uri?) -> Unit
 ) {
 
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
+            onResult = { uris ->
+                onUriSelected(uris)
+            })
+
     val context: Context = LocalContext.current
 
     val message = rememberSaveable {
@@ -74,9 +82,8 @@ fun ChatScreen(
 
     val lazyColumnListState = rememberLazyListState()
 
-    LaunchedEffect(key1 = state.messages.size){
-        if(state.messages.size > 6)
-            lazyColumnListState.animateScrollToItem(state.messages.size - 1)
+    LaunchedEffect(key1 = state.messages.size) {
+        if (state.messages.size > 6) lazyColumnListState.animateScrollToItem(state.messages.size - 1)
     }
 
     LaunchedEffect(key1 = state.connectionState) {
@@ -88,12 +95,14 @@ fun ChatScreen(
                 isPopupWarning = true
                 isPopupDisplayed = true
             }
+
             ConnectionState.CONNECTION_ACTIVE -> {
                 isTextFieldEnabled = true
                 popupMessage = context.getString(R.string.connected)
                 isPopupWarning = false
                 isPopupDisplayed = true
             }
+
             else -> {}
         }
     }
@@ -121,7 +130,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Divider(color = com.ps.bluechat.presentation.theme.Colors.NormalGrey, thickness = 1.dp)
+            Divider(color = BlueChatColors.NormalGrey, thickness = 1.dp)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,6 +171,15 @@ fun ChatScreen(
                         cursorColor = MaterialTheme.colors.onSecondary
                     ),
                     enabled = isTextFieldEnabled,
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            modifier = Modifier.clickable {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                )
+                            })
+                    },
                     trailingIcon = {
                         Icon(imageVector = Icons.Default.Send,
                             contentDescription = null,
@@ -179,6 +197,7 @@ fun ChatScreen(
                         .padding(16.dp)
                         .height(65.dp)
                         .gradientSurface()
+                        .clip(RoundedCornerShape(20))
                 )
             }
         }

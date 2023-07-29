@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import com.ps.bluechat.R
@@ -15,6 +18,7 @@ import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.util.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.*
 
@@ -128,16 +132,18 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             )
 
             emit(ConnectionResult.ConnectionOpen)
-            currentClientSocket = currentServerSocket?.accept(10000)
+            currentClientSocket = currentServerSocket?.accept()
             emit(ConnectionResult.ConnectionEstablished)
+
             currentClientSocket?.let {
                 currentServerSocket?.close()
                 val service = BluetoothDataTransferService(it)
                 dataTransferService = service
-                emitAll(service.listenForIncomingMessages().map { message ->
+                emitAll(service.listenForIncomingMessages(context = context).map { message ->
                     ConnectionResult.TransferSucceeded(message)
                 })
             }
+
         }.onCompletion {
             closeConnection()
         }.flowOn(Dispatchers.IO)
@@ -166,7 +172,7 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                     isSuccess = true
                     BluetoothDataTransferService(socket).also {
                         dataTransferService = it
-                        emitAll(it.listenForIncomingMessages().map { message ->
+                        emitAll(it.listenForIncomingMessages(context = context).map { message ->
                             ConnectionResult.TransferSucceeded(message)
                         })
                     }
@@ -201,6 +207,53 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
         dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
 
         return bluetoothMessage
+    }
+
+    private val CHUNK_SIZE = 2048 // Set an appropriate chunk size
+
+    override suspend fun trySendImage(uri: Uri): BluetoothMessage? {
+        Log.d(tag, "trySendImage(): $uri")
+        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return null
+
+        if (dataTransferService == null) {
+            return null
+        }
+
+        val desiredWidth = 200
+        val desiredHeight = 200
+        val quality = 30
+
+        // Convert the image URI to a Bitmap
+        val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
+
+        // Downscale the bitmap to desired dimensions
+        val scaledBitmap = Bitmap.createScaledBitmap(bitmap, desiredWidth, desiredHeight, true)
+
+        // Compress the scaled bitmap and convert it to a byte array
+        val outputStream = ByteArrayOutputStream()
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
+
+        // Get the complete byte array of the image
+        val completeByteArray = outputStream.toByteArray()
+
+        // Send the image size first to prepare the receiver for incoming data
+        dataTransferService?.sendMessage(completeByteArray.size.toString().toByteArray())
+
+        // Send the image in chunks
+        var offset = 0
+        while (offset < completeByteArray.size) {
+            val chunkSize = CHUNK_SIZE.coerceAtMost(completeByteArray.size - offset)
+            val chunk = completeByteArray.copyOfRange(offset, offset + chunkSize)
+            dataTransferService?.sendMessage(chunk)
+            offset += chunkSize
+        }
+
+        return BluetoothMessage(
+            imageUri = uri,
+            isFromLocalUser = true,
+            address = bluetoothAdapter?.address ?: "My Address",
+            time = getCurrentTime()
+        )
     }
 
     override fun closeConnection() {
@@ -241,7 +294,6 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
-//            addAction(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
             addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED)
         })

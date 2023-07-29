@@ -3,7 +3,7 @@ package com.ps.bluechat.presentation.theme
 import androidx.compose.ui.graphics.Color
 
 
-class Colors {
+class BlueChatColors {
     companion object {
         val DarkSurfaceStart = Color(0xFF23262E)
         val DarkSurfaceEnd = Color(0xFF212329)
@@ -17,5 +17,7 @@ class Colors {
         val NormalGrey = Color(0xFF53565B)
 
         val SuccessGreen = Color(0xFF5cb85c)
+        val LocalMessageBubbleColor = Color(0xFF1982FC)
+        val RemoteMessageBubbleColor = Color(0xFF53565B)
     }
 }

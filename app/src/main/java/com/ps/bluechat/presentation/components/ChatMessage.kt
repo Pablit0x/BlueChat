@@ -3,7 +3,6 @@ package com.ps.bluechat.presentation.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Colors
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -11,17 +10,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.ps.bluechat.domain.chat.BluetoothMessage
+import com.ps.bluechat.presentation.theme.BlueChatColors
 import com.ps.bluechat.presentation.theme.BlueChatTheme
 
 @Composable
 fun ChatMessage(
-    message: BluetoothMessage,
-    modifier: Modifier = Modifier
+    message: BluetoothMessage, modifier: Modifier = Modifier
 ) {
 
     Column(
@@ -29,26 +29,42 @@ fun ChatMessage(
         horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
     ) {
         Text(message.time, color = MaterialTheme.colors.onBackground)
-        Column(modifier = modifier
-            .clip(
-                RoundedCornerShape(
-                    topStart = if (message.isFromLocalUser) 15.dp else 0.dp,
-                    topEnd = 15.dp,
-                    bottomStart = 15.dp,
-                    bottomEnd = if (message.isFromLocalUser) 0.dp else 15.dp
+        Column(
+            modifier = modifier
+                .clip(
+                    RoundedCornerShape(
+                        topStart = if (message.isFromLocalUser) 15.dp else 0.dp,
+                        topEnd = 15.dp,
+                        bottomStart = 15.dp,
+                        bottomEnd = if (message.isFromLocalUser) 0.dp else 15.dp
+                    )
                 )
-            )
-            .background(
-                if(message.isFromLocalUser) Color(0xFF1982FC) else Color(0xFF53565B)
-            )
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start) {
-            Text(
-                text = message.message,
-                fontSize = 18.sp,
-                color = MaterialTheme.colors.onPrimary,
-                modifier = Modifier.widthIn(max = 300.dp)
-            )
+                .background(
+                    if (message.imageUri != null) Color.Transparent
+                    else if (message.isFromLocalUser) BlueChatColors.LocalMessageBubbleColor else BlueChatColors.RemoteMessageBubbleColor
+                )
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
+        ) {
+            if (message.imageUri != null) {
+                AsyncImage(
+                    model = message.imageUri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .widthIn(max = 200.dp)
+                        .clip(
+                            RoundedCornerShape(10)
+                        ).padding(start = (-16).dp, end = (-16).dp)
+                )
+            } else {
+                Text(
+                    text = message.message,
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colors.onPrimary,
+                    modifier = Modifier.widthIn(max = 300.dp)
+                )
+            }
         }
     }
 }

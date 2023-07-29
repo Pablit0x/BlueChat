@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
+import com.ps.bluechat.presentation.theme.BlueChatColors
 
 @Composable
 fun BluetoothPairedDeviceItem(
@@ -119,7 +120,7 @@ fun BluetoothPairedDeviceItem(
                 }
             }
 
-            Divider(color = com.ps.bluechat.presentation.theme.Colors.NormalGrey, thickness = 1.dp)
+            Divider(color = BlueChatColors.NormalGrey, thickness = 1.dp)
 
             DropdownMenuItem(
                 onClick = onRemoveBond

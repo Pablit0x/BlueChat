@@ -1,6 +1,6 @@
 package com.ps.bluechat.presentation
 
-import android.bluetooth.BluetoothDevice
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -118,6 +118,22 @@ class BluetoothViewModel @Inject constructor(
                     it.copy(
                         messages = it.messages + bluetoothMessage
                     )
+                }
+            }
+        }
+    }
+
+    fun sendImages(uri : Uri?){
+        Log.d(tag, "sendImages(): $uri")
+        uri?.let { imageUri ->
+            viewModelScope.launch {
+                val bluetoothMessage = bluetoothController.trySendImage(uri = imageUri)
+                if (bluetoothMessage != null) {
+                    _state.update {
+                        it.copy(
+                            messages = it.messages + bluetoothMessage
+                        )
+                    }
                 }
             }
         }

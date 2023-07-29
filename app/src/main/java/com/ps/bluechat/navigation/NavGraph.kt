@@ -73,7 +73,8 @@ fun NavGraph(
                 direction = direction,
                 state = state,
                 onDisconnect = viewModel::disconnectDevice,
-                onSendMessage = viewModel::sendMessage
+                onSendMessage = viewModel::sendMessage,
+                onUriSelected = viewModel::sendImages
             )
         }
     }

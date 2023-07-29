@@ -6,13 +6,13 @@ import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.ps.bluechat.presentation.theme.Colors.Companion.AccentViolet
-import com.ps.bluechat.presentation.theme.Colors.Companion.DarkGrey
-import com.ps.bluechat.presentation.theme.Colors.Companion.LightBlueGrey
-import com.ps.bluechat.presentation.theme.Colors.Companion.NormalGrey
-import com.ps.bluechat.presentation.theme.Colors.Companion.Purple
-import com.ps.bluechat.presentation.theme.Colors.Companion.SuperLightGrey
-import com.ps.bluechat.presentation.theme.Colors.Companion.TextBlack
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.AccentViolet
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.DarkGrey
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.LightBlueGrey
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.NormalGrey
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.Purple
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.SuperLightGrey
+import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.TextBlack
 
 
 private val LightColorPalette = lightColors(
