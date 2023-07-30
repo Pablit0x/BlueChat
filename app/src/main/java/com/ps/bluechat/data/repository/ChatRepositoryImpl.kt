@@ -9,15 +9,19 @@ class ChatRepositoryImpl(
     private val chatDao: ChatDao
 ) : ChatRepository{
     override fun getMessagesByAddress(address: String): Flow<List<BluetoothMessage>> {
-        TODO("Not yet implemented")
+        return chatDao.getMessagesByAddress(address = address)
     }
 
     override fun upsertMessage(bluetoothMessage: BluetoothMessage) {
-        TODO("Not yet implemented")
+        chatDao.upsertMessage(bluetoothMessage = bluetoothMessage)
     }
 
     override fun clearMessagesWithUserByAddress(address: String) {
-        TODO("Not yet implemented")
+        chatDao.clearMessagesWithUserByAddress(address = address)
+    }
+
+    override fun getLatestMessageByAddress(address: String) : BluetoothMessage {
+        return chatDao.getLatestMessageByAddress(address = address)
     }
 
 }

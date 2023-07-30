@@ -19,11 +19,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides
-    @Singleton
-    fun provideBluetoothController(@ApplicationContext context: Context) : BluetoothController {
-        return AndroidBluetoothController(context)
-    }
 
     @Provides
     @Singleton
@@ -40,5 +35,11 @@ object AppModule {
     @Singleton
     fun provideChatRepository(db: ChatDatabase): ChatRepository {
         return ChatRepositoryImpl(db.chatDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBluetoothController(@ApplicationContext context: Context, chatRepository: ChatRepository) : BluetoothController {
+        return AndroidBluetoothController(context, chatRepository = chatRepository)
     }
 }

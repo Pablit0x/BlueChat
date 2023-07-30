@@ -7,4 +7,5 @@ interface ChatRepository {
     fun getMessagesByAddress(address: String) : Flow<List<BluetoothMessage>>
     fun upsertMessage(bluetoothMessage: BluetoothMessage)
     fun clearMessagesWithUserByAddress(address: String)
+    fun getLatestMessageByAddress(address: String) : BluetoothMessage
 }

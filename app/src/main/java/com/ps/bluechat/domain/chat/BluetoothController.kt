@@ -34,7 +34,6 @@ interface BluetoothController {
     fun stopScanning()
     fun updateDeviceName()
     fun release()
-
     fun createBond(device: BluetoothDeviceDomain)
     fun removeBond(device: BluetoothDeviceDomain)
 }

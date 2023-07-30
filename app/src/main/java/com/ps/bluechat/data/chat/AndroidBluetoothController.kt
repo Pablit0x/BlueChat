@@ -15,6 +15,7 @@ import android.os.Build
 import android.util.Log
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.*
+import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.util.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -24,7 +25,10 @@ import java.util.*
 
 
 @SuppressLint("MissingPermission", "HardwareIds")
-class AndroidBluetoothController(private val context: Context) : BluetoothController {
+class AndroidBluetoothController(
+    private val context: Context,
+    private val chatRepository: ChatRepository
+) : BluetoothController {
 
     private val tag = AndroidBluetoothController::class.simpleName
 
@@ -119,7 +123,6 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
     override val errors: StateFlow<String?>
         get() = _errors.asStateFlow()
 
-
     override fun startBluetoothServer(): Flow<ConnectionResult> {
         Log.d(tag, "startBluetoothServer()")
         return flow {
@@ -139,15 +142,20 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                 currentServerSocket?.close()
                 val service = BluetoothDataTransferService(it)
                 dataTransferService = service
-                emitAll(service.listenForIncomingMessages(context = context).map { message ->
-                    ConnectionResult.TransferSucceeded(message)
-                })
-            }
 
+                service.listenForIncomingMessages(context = context).collect { message ->
+                    chatRepository.upsertMessage(message)
+                    val lastMessage = chatRepository.getLatestMessageByAddress(message.address)
+                    emit(ConnectionResult.TransferSucceeded(lastMessage))
+                }
+            }
+        }.catch { exception ->
+            emit(ConnectionResult.Error(exception.message ?: "Unknown error occurred"))
         }.onCompletion {
             closeConnection()
         }.flowOn(Dispatchers.IO)
     }
+
 
     override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
         Log.d(tag, "connectToDevice(): $device")
@@ -172,9 +180,11 @@ class AndroidBluetoothController(private val context: Context) : BluetoothContro
                     isSuccess = true
                     BluetoothDataTransferService(socket).also {
                         dataTransferService = it
-                        emitAll(it.listenForIncomingMessages(context = context).map { message ->
-                            ConnectionResult.TransferSucceeded(message)
-                        })
+                        it.listenForIncomingMessages(context = context).collect { message ->
+                            chatRepository.upsertMessage(message)
+                            val lastMessage = chatRepository.getLatestMessageByAddress(message.address)
+                            emit(ConnectionResult.TransferSucceeded(lastMessage))
+                        }
                     }
                 } catch (e: IOException) {
                     socket.close()

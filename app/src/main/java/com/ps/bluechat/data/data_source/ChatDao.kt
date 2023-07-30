@@ -18,4 +18,7 @@ interface ChatDao {
 
     @Query("DELETE FROM bluetoothMessage WHERE address = :address")
     fun clearMessagesWithUserByAddress(address: String)
+
+    @Query("SELECT * FROM bluetoothMessage WHERE address = :address ORDER BY time DESC LIMIT 1")
+    fun getLatestMessageByAddress(address: String) : BluetoothMessage
 }
