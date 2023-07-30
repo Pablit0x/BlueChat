@@ -45,6 +45,8 @@ To get started with BlueChat, follow these steps:
 - Kotlin Flows: Asynchronous data streaming for handling Bluetooth data.
 - Coroutines: For managing concurrency and asynchronous tasks.
 - Android Bluetooth API: For handling Bluetooth communication.
+- Room: For persistent storage of messages in a local SQLite database.
+- Dagger Hilt: For simple dependency injection, providing a clean and maintainable app architecture.
 - Coil: For async image loading.
 - Android Storage: For saving received images to the phone's internal storage.
 - Android System Photo Picker: For allowing users to select images from their device's gallery.
