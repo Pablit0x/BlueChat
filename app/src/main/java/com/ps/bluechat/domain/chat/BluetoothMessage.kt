@@ -6,10 +6,11 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class BluetoothMessage(
+    @PrimaryKey(autoGenerate = true)
+    val id : Int? = null,
     val imageUri: Uri? = null,
     val message: String = "",
     val time: String,
     val isFromLocalUser: Boolean,
-    @PrimaryKey
     val address: String
 )

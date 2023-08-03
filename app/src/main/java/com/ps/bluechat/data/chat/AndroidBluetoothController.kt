@@ -136,17 +136,22 @@ class AndroidBluetoothController(
 
             emit(ConnectionResult.ConnectionOpen)
             currentClientSocket = currentServerSocket?.accept()
-            emit(ConnectionResult.ConnectionEstablished)
 
-            currentClientSocket?.let {
+
+            currentClientSocket?.let { socket ->
+
+                val clientAddress = socket.remoteDevice.address
+                val messages = chatRepository.getMessagesByAddress(address = clientAddress)
+
+                emit(ConnectionResult.ConnectionEstablished(messages = messages))
+
                 currentServerSocket?.close()
-                val service = BluetoothDataTransferService(it)
+                val service = BluetoothDataTransferService(socket = socket)
                 dataTransferService = service
 
                 service.listenForIncomingMessages(context = context).collect { message ->
-                    chatRepository.upsertMessage(message)
-                    val lastMessage = chatRepository.getLatestMessageByAddress(message.address)
-                    emit(ConnectionResult.TransferSucceeded(lastMessage))
+                    chatRepository.insertMessage(message)
+                    emit(ConnectionResult.TransferSucceeded(message))
                 }
             }
         }.catch { exception ->
@@ -176,14 +181,17 @@ class AndroidBluetoothController(
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
-                    emit(ConnectionResult.ConnectionEstablished)
+
+                    val clientAddress = socket.remoteDevice.address
+                    val messages = chatRepository.getMessagesByAddress(address = clientAddress)
+                    emit(ConnectionResult.ConnectionEstablished(messages = messages))
+
                     isSuccess = true
-                    BluetoothDataTransferService(socket).also {
-                        dataTransferService = it
-                        it.listenForIncomingMessages(context = context).collect { message ->
-                            chatRepository.upsertMessage(message)
-                            val lastMessage = chatRepository.getLatestMessageByAddress(message.address)
-                            emit(ConnectionResult.TransferSucceeded(lastMessage))
+                    BluetoothDataTransferService(socket = socket).also { service ->
+                        dataTransferService = service
+                        service.listenForIncomingMessages(context = context).collect { message ->
+                            chatRepository.insertMessage(message)
+                            emit(ConnectionResult.TransferSucceeded(message = message))
                         }
                     }
                 } catch (e: IOException) {
@@ -206,20 +214,18 @@ class AndroidBluetoothController(
             return null
         }
 
-
         val bluetoothMessage = BluetoothMessage(
             message = message,
             isFromLocalUser = true,
-            address = bluetoothAdapter?.address ?: "My Address",
+            address = currentClientSocket?.remoteDevice?.address ?: context.getString(R.string.unknown),
             time = getCurrentTime()
         )
 
         dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
+        chatRepository.insertMessage(bluetoothMessage = bluetoothMessage)
 
         return bluetoothMessage
     }
-
-    private val CHUNK_SIZE = 2048 // Set an appropriate chunk size
 
     override suspend fun trySendImage(uri: Uri): BluetoothMessage? {
         Log.d(tag, "trySendImage(): $uri")
@@ -228,6 +234,8 @@ class AndroidBluetoothController(
         if (dataTransferService == null) {
             return null
         }
+
+        val CHUNK_SIZE = 2048
 
         val desiredWidth = 300
         val desiredHeight = 300
@@ -258,12 +266,15 @@ class AndroidBluetoothController(
             offset += chunkSize
         }
 
-        return BluetoothMessage(
+        val bluetoothMessage =  BluetoothMessage(
             imageUri = uri,
             isFromLocalUser = true,
-            address = bluetoothAdapter?.address ?: "My Address",
+            address = currentClientSocket?.remoteDevice?.address ?: context.getString(R.string.unknown),
             time = getCurrentTime()
         )
+
+        chatRepository.insertMessage(bluetoothMessage = bluetoothMessage)
+        return bluetoothMessage
     }
 
     override fun closeConnection() {

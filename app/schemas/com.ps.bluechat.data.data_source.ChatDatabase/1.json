@@ -2,12 +2,18 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "a562fc5c94c21893580612a3a4f2fc38",
+    "identityHash": "32a5bb278d1d3287b359fe2022502a38",
     "entities": [
       {
         "tableName": "BluetoothMessage",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`imageUri` TEXT, `message` TEXT NOT NULL, `time` TEXT NOT NULL, `isFromLocalUser` INTEGER NOT NULL, `address` TEXT NOT NULL, PRIMARY KEY(`address`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `imageUri` TEXT, `message` TEXT NOT NULL, `time` TEXT NOT NULL, `isFromLocalUser` INTEGER NOT NULL, `address` TEXT NOT NULL)",
         "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
           {
             "fieldPath": "imageUri",
             "columnName": "imageUri",
@@ -40,9 +46,9 @@
           }
         ],
         "primaryKey": {
-          "autoGenerate": false,
+          "autoGenerate": true,
           "columnNames": [
-            "address"
+            "id"
           ]
         },
         "indices": [],
@@ -52,7 +58,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a562fc5c94c21893580612a3a4f2fc38')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '32a5bb278d1d3287b359fe2022502a38')"
     ]
   }
 }

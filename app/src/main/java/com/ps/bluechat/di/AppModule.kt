@@ -27,8 +27,7 @@ object AppModule {
             context,
             ChatDatabase::class.java,
             ChatDatabase.DATABASE_NAME,
-        )
-            .build()
+        ).build()
     }
 
     @Provides

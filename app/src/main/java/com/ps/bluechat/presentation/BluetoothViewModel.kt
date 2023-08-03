@@ -76,11 +76,13 @@ class BluetoothViewModel @Inject constructor(
         Log.d(tag, "startScan()")
         bluetoothController.startScanning()
     }
-    fun createBond(device: BluetoothDeviceDomain){
+
+    fun createBond(device: BluetoothDeviceDomain) {
         Log.d(tag, "createBond(): $device")
         bluetoothController.createBond(device = device)
     }
-    fun removeBond(device: BluetoothDeviceDomain){
+
+    fun removeBond(device: BluetoothDeviceDomain) {
         Log.d(tag, "removeBond(): $device")
         bluetoothController.removeBond(device = device)
     }
@@ -123,7 +125,7 @@ class BluetoothViewModel @Inject constructor(
         }
     }
 
-    fun sendImages(uri : Uri?){
+    fun sendImages(uri: Uri?) {
         Log.d(tag, "sendImages(): $uri")
         uri?.let { imageUri ->
             viewModelScope.launch {
@@ -176,23 +178,26 @@ class BluetoothViewModel @Inject constructor(
                         )
                     }
                 }
+
                 ConnectionResult.ConnectionOpen -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_OPEN,
-                            errorMessage = null
+                            connectionState = ConnectionState.CONNECTION_OPEN, errorMessage = null
                         )
                     }
 
                 }
-                ConnectionResult.ConnectionEstablished -> {
+
+                is ConnectionResult.ConnectionEstablished -> {
                     _state.update {
                         it.copy(
                             connectionState = ConnectionState.CONNECTION_ACTIVE,
-                            errorMessage = null
+                            errorMessage = null,
+                            messages = result.messages
                         )
                     }
                 }
+
                 is ConnectionResult.Error -> {
                     _state.update {
                         it.copy(
@@ -200,6 +205,7 @@ class BluetoothViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is ConnectionResult.TransferSucceeded -> {
                     _state.update {
                         it.copy(
@@ -218,7 +224,7 @@ class BluetoothViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    fun clearErrorMessage(){
+    fun clearErrorMessage() {
         _state.update {
             it.copy(
                 errorMessage = null
