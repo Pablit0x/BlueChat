@@ -1,9 +1,7 @@
 package com.ps.bluechat.domain.chat
 
-import android.bluetooth.BluetoothDevice
 import android.net.Uri
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface BluetoothController {

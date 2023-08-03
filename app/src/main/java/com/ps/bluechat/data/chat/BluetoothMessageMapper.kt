@@ -5,7 +5,7 @@ import com.ps.bluechat.domain.chat.BluetoothMessage
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.*
+import java.util.Locale
 
 fun String.toBluetoothMessage(isFromLocalUser: Boolean, address: String): BluetoothMessage {
     val message = substringAfterLast("±")

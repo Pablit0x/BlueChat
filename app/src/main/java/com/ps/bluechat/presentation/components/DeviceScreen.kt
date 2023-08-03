@@ -1,7 +1,5 @@
 package com.ps.bluechat.presentation.components
 
-import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.*

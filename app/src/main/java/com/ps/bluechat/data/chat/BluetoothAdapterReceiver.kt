@@ -4,7 +4,6 @@ import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.ps.bluechat.domain.chat.ScanningState
 
 class BluetoothAdapterReceiver(

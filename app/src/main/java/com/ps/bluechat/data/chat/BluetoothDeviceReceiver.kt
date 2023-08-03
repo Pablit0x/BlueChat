@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.ps.bluechat.domain.chat.ConnectionState
-import com.ps.bluechat.util.Constants
 
 class BluetoothDeviceReceiver(
     private val onDeviceFound : (BluetoothDevice) -> Unit,

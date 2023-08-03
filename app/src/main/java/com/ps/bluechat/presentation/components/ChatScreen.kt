@@ -36,8 +36,8 @@ import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
 import com.ps.bluechat.presentation.theme.BlueChatColors
-import kotlinx.coroutines.delay
 import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.SuccessGreen
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

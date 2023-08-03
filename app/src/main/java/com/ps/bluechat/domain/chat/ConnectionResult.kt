@@ -1,7 +1,5 @@
 package com.ps.bluechat.domain.chat
 
-import android.bluetooth.BluetoothSocket
-
 sealed interface ConnectionResult{
     object ConnectionOpen : ConnectionResult
     object ConnectionRequest : ConnectionResult
