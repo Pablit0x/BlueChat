@@ -403,6 +403,10 @@ class AndroidBluetoothController(
     }
 
     override fun updateDeviceName() {
+        if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+            return
+        }
+
         val name = bluetoothAdapter?.name
         Log.d(tag, "updateDeviceName(): $name")
 
