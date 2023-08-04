@@ -134,7 +134,8 @@ class AndroidBluetoothController(
             )
 
             emit(ConnectionResult.ConnectionOpen)
-            currentClientSocket = currentServerSocket?.accept()
+
+            currentClientSocket = currentServerSocket?.accept(10000)
 
 
             currentClientSocket?.let { socket ->
@@ -176,7 +177,7 @@ class AndroidBluetoothController(
             stopScanning()
 
             emit(ConnectionResult.ConnectionRequest)
-            var isSuccess = false
+
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
@@ -184,8 +185,6 @@ class AndroidBluetoothController(
                     val clientAddress = socket.remoteDevice.address
                     val messages = chatRepository.getMessagesByAddress(address = clientAddress)
                     emit(ConnectionResult.ConnectionEstablished(messages = messages))
-
-                    isSuccess = true
                     BluetoothDataTransferService(socket = socket).also { service ->
                         dataTransferService = service
                         service.listenForIncomingMessages(context = context).collect { message ->
@@ -194,10 +193,8 @@ class AndroidBluetoothController(
                         }
                     }
                 } catch (e: IOException) {
-                    socket.close()
-                    currentClientSocket = null
-                    if(!isSuccess)
-                        emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
+                    e.printStackTrace()
+                    emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
                 }
             }
         }.onCompletion {
@@ -234,14 +231,15 @@ class AndroidBluetoothController(
             return null
         }
 
-        val CHUNK_SIZE = 2048
-
+        val desiredChunkSize = 1024
         val desiredWidth = 300
         val desiredHeight = 300
         val quality = 15
 
         // Convert the image URI to a Bitmap
         val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
+
+        val realUri = dataTransferService?.saveBitmapToMediaStore(context = context, bitmap = bitmap)
 
         // Downscale the bitmap to desired dimensions
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, desiredWidth, desiredHeight, true)
@@ -259,14 +257,14 @@ class AndroidBluetoothController(
         // Send the image in chunks
         var offset = 0
         while (offset < completeByteArray.size) {
-            val chunkSize = CHUNK_SIZE.coerceAtMost(completeByteArray.size - offset)
+            val chunkSize = desiredChunkSize.coerceAtMost(completeByteArray.size - offset)
             val chunk = completeByteArray.copyOfRange(offset, offset + chunkSize)
             dataTransferService?.sendMessage(chunk)
             offset += chunkSize
         }
 
         val bluetoothMessage =  BluetoothMessage(
-            imageUri = uri,
+            imageUri = realUri,
             isFromLocalUser = true,
             address = currentClientSocket?.remoteDevice?.address ?: context.getString(R.string.unknown),
             time = getCurrentTime()

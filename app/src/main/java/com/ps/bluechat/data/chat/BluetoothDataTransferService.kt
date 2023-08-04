@@ -74,7 +74,7 @@ class BluetoothDataTransferService(
         return "image_${timestamp}_$randomString.jpg"
     }
 
-    private fun saveBitmapToMediaStore(context: Context, bitmap: Bitmap): Uri? {
+    fun saveBitmapToMediaStore(context: Context, bitmap: Bitmap): Uri? {
         val filename = generateUniqueFileName()
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, filename)
