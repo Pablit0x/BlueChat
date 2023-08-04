@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
@@ -45,6 +46,7 @@ fun ChatScreen(
     direction: Direction,
     state: BluetoothUiState,
     onDisconnect: () -> Unit,
+    onDeleteAllMessages: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     onUriSelected: (Uri?) -> Unit
 ) {
@@ -115,6 +117,16 @@ fun ChatScreen(
                 text = recipientName, fontSize = 24.sp, fontWeight = FontWeight.Bold
             )
         }, actions = {
+            AnimatedVisibility(visible = state.messages.isNotEmpty()) {
+                IconButton(onClick = {
+                    onDeleteAllMessages(state.messages.last().address)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever, contentDescription = null
+                    )
+                }
+            }
+
             IconButton(onClick = {
                 onDisconnect()
                 direction.navigateBackToHomeScreen()

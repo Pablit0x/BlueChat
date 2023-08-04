@@ -8,8 +8,10 @@ import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
+import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.util.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,11 +24,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class BluetoothViewModel @Inject constructor(
-    private val bluetoothController: BluetoothController
+    private val bluetoothController: BluetoothController,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(BluetoothUiState())
     private var deviceConnectionJob: Job? = null
@@ -82,6 +86,14 @@ class BluetoothViewModel @Inject constructor(
     fun startScan() {
         Log.d(TAG, "startScan()")
         bluetoothController.startScanning()
+    }
+
+    fun clearAllMessages(address: String){
+        viewModelScope.launch {
+            withContext(Dispatchers.IO){
+                chatRepository.clearMessagesWithUserByAddress(address = address)
+            }
+        }
     }
 
     fun createBond(device: BluetoothDeviceDomain) {
