@@ -1,5 +1,4 @@
 package com.ps.bluechat.util
-
 object Constants {
 
     // Screens

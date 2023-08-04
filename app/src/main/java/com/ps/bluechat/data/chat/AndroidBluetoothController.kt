@@ -16,8 +16,14 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.util.Constants
+import com.ps.bluechat.util.TAG
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.*
@@ -25,11 +31,9 @@ import java.util.*
 
 @SuppressLint("MissingPermission", "HardwareIds")
 class AndroidBluetoothController(
-    private val context: Context,
-    private val chatRepository: ChatRepository
+    private val context: Context, private val chatRepository: ChatRepository
 ) : BluetoothController {
 
-    private val tag = AndroidBluetoothController::class.simpleName
 
     private val bluetoothDeviceReceiver = BluetoothDeviceReceiver(onDeviceFound = { foundDevice ->
         _scannedDevices.update { devices ->
@@ -48,8 +52,7 @@ class AndroidBluetoothController(
                 else -> {}
             }
         }
-    }, onBondStateChanged = { updatePairedDevices() }
-    )
+    }, onBondStateChanged = { updatePairedDevices() })
 
 
     private val bluetoothAdapterReceiver =
@@ -123,7 +126,7 @@ class AndroidBluetoothController(
         get() = _errors.asStateFlow()
 
     override fun startBluetoothServer(): Flow<ConnectionResult> {
-        Log.d(tag, "startBluetoothServer()")
+        Log.d(TAG, "startBluetoothServer()")
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
@@ -151,7 +154,6 @@ class AndroidBluetoothController(
 
                 service.listenForIncomingMessages(context = context).collect { message ->
                     chatRepository.insertMessage(message)
-                    emit(ConnectionResult.TransferSucceeded(message))
                 }
             }
         }.catch { exception ->
@@ -161,9 +163,8 @@ class AndroidBluetoothController(
         }.flowOn(Dispatchers.IO)
     }
 
-
     override fun connectToDevice(device: BluetoothDeviceDomain): Flow<ConnectionResult> {
-        Log.d(tag, "connectToDevice(): $device")
+        Log.d(TAG, "connectToDevice(): $device")
         return flow {
             if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
@@ -185,15 +186,15 @@ class AndroidBluetoothController(
                     val clientAddress = socket.remoteDevice.address
                     val messages = chatRepository.getMessagesByAddress(address = clientAddress)
                     emit(ConnectionResult.ConnectionEstablished(messages = messages))
+
                     BluetoothDataTransferService(socket = socket).also { service ->
                         dataTransferService = service
                         service.listenForIncomingMessages(context = context).collect { message ->
-                            chatRepository.insertMessage(message)
-                            emit(ConnectionResult.TransferSucceeded(message = message))
-                        }
+                                chatRepository.insertMessage(message)
+                            }
                     }
+
                 } catch (e: IOException) {
-                    e.printStackTrace()
                     emit(ConnectionResult.Error(context.getString(R.string.connection_failed)))
                 }
             }
@@ -203,7 +204,7 @@ class AndroidBluetoothController(
     }
 
     override suspend fun trySendMessage(message: String): BluetoothMessage? {
-        Log.d(tag, "trySendMessage(): $message")
+        Log.d(TAG, "trySendMessage(): $message")
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return null
 
         if (dataTransferService == null) {
@@ -213,7 +214,8 @@ class AndroidBluetoothController(
         val bluetoothMessage = BluetoothMessage(
             message = message,
             isFromLocalUser = true,
-            address = currentClientSocket?.remoteDevice?.address ?: context.getString(R.string.unknown),
+            address = currentClientSocket?.remoteDevice?.address
+                ?: context.getString(R.string.unknown),
             time = getCurrentTime()
         )
 
@@ -224,7 +226,7 @@ class AndroidBluetoothController(
     }
 
     override suspend fun trySendImage(uri: Uri): BluetoothMessage? {
-        Log.d(tag, "trySendImage(): $uri")
+        Log.d(TAG, "trySendImage(): $uri")
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) return null
 
         if (dataTransferService == null) {
@@ -239,7 +241,8 @@ class AndroidBluetoothController(
         // Convert the image URI to a Bitmap
         val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
 
-        val realUri = dataTransferService?.saveBitmapToMediaStore(context = context, bitmap = bitmap)
+        val realUri =
+            dataTransferService?.saveBitmapToMediaStore(context = context, bitmap = bitmap)
 
         // Downscale the bitmap to desired dimensions
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, desiredWidth, desiredHeight, true)
@@ -263,10 +266,11 @@ class AndroidBluetoothController(
             offset += chunkSize
         }
 
-        val bluetoothMessage =  BluetoothMessage(
+        val bluetoothMessage = BluetoothMessage(
             imageUri = realUri,
             isFromLocalUser = true,
-            address = currentClientSocket?.remoteDevice?.address ?: context.getString(R.string.unknown),
+            address = currentClientSocket?.remoteDevice?.address
+                ?: context.getString(R.string.unknown),
             time = getCurrentTime()
         )
 
@@ -275,7 +279,7 @@ class AndroidBluetoothController(
     }
 
     override fun closeConnection() {
-        Log.d(tag, "closeConnection()")
+        Log.d(TAG, "closeConnection()")
         currentServerSocket?.close()
         currentClientSocket?.close()
         currentClientSocket = null
@@ -284,7 +288,7 @@ class AndroidBluetoothController(
 
     @Suppress("DEPRECATION")
     override fun enableBluetooth() {
-        Log.d(tag, "enableBluetooth()")
+        Log.d(TAG, "enableBluetooth()")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -296,7 +300,7 @@ class AndroidBluetoothController(
 
     @Suppress("DEPRECATION")
     override fun disableBluetooth() {
-        Log.d(tag, "disableBluetooth()")
+        Log.d(TAG, "disableBluetooth()")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val intent = Intent("android.bluetooth.adapter.action.REQUEST_DISABLE")
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -307,7 +311,7 @@ class AndroidBluetoothController(
     }
 
     override fun registerBluetoothAdapterReceiver() {
-        Log.d(tag, "registerBluetoothAdapterReceiver()")
+        Log.d(TAG, "registerBluetoothAdapterReceiver()")
         context.registerReceiver(bluetoothAdapterReceiver, IntentFilter().apply {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
@@ -319,7 +323,7 @@ class AndroidBluetoothController(
     }
 
     override fun registerBluetoothDeviceReceiver() {
-        Log.d(tag, "registerBluetoothDeviceReceiver()")
+        Log.d(TAG, "registerBluetoothDeviceReceiver()")
         context.registerReceiver(bluetoothDeviceReceiver, IntentFilter().apply {
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
@@ -331,7 +335,7 @@ class AndroidBluetoothController(
     }
 
     override fun startScanning() {
-        Log.d(tag, "startScanning()")
+        Log.d(TAG, "startScanning()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
@@ -340,7 +344,7 @@ class AndroidBluetoothController(
     }
 
     override fun stopScanning() {
-        Log.d(tag, "stopScanning()")
+        Log.d(TAG, "stopScanning()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
             return
         }
@@ -348,14 +352,14 @@ class AndroidBluetoothController(
     }
 
     override fun release() {
-        Log.d(tag, "release()")
+        Log.d(TAG, "release()")
         context.unregisterReceiver(bluetoothDeviceReceiver)
         context.unregisterReceiver(bluetoothAdapterReceiver)
         closeConnection()
     }
 
     private fun updatePairedDevices() {
-        Log.d(tag, "updatePairedDevices()")
+        Log.d(TAG, "updatePairedDevices()")
         if (!hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
             return
         }
@@ -375,7 +379,7 @@ class AndroidBluetoothController(
     }
 
     override fun changeDeviceName(deviceName: String) {
-        Log.d(tag,"changeDeviceName(): $deviceName")
+        Log.d(TAG, "changeDeviceName(): $deviceName")
 
         while (bluetoothAdapter?.name != deviceName) {
             bluetoothAdapter?.name = deviceName
@@ -384,7 +388,7 @@ class AndroidBluetoothController(
     }
 
     override fun enableDiscoverability() {
-        Log.d(tag, "enableDiscoverability()")
+        Log.d(TAG, "enableDiscoverability()")
         val enableDiscoverabilityIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
         enableDiscoverabilityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         enableDiscoverabilityIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
@@ -392,7 +396,7 @@ class AndroidBluetoothController(
     }
 
     override fun disableDiscoverability() {
-        Log.d(tag, "disableDiscoverability()")
+        Log.d(TAG, "disableDiscoverability()")
         val disableDiscoverabilityIntent = Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE)
         disableDiscoverabilityIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         disableDiscoverabilityIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 1)
@@ -405,7 +409,7 @@ class AndroidBluetoothController(
         }
 
         val name = bluetoothAdapter?.name
-        Log.d(tag, "updateDeviceName(): $name")
+        Log.d(TAG, "updateDeviceName(): $name")
 
         _deviceName.update { name ?: context.getString(R.string.no_name) }
     }
@@ -415,26 +419,26 @@ class AndroidBluetoothController(
     }
 
     override fun removeBond(device: BluetoothDeviceDomain) {
-        Log.d(tag, "removeBond(): $device")
+        Log.d(TAG, "removeBond(): $device")
         try {
             val deviceToRemove = bluetoothAdapter?.getRemoteDevice(device.address)
             deviceToRemove?.let {
                 deviceToRemove::class.java.getMethod("removeBond").invoke(deviceToRemove)
             }
         } catch (e: Exception) {
-            Log.e(tag, "Removing bond has been failed. ${e.message}")
+            Log.e(TAG, "Removing bond has been failed. ${e.message}")
         }
     }
 
     override fun createBond(device: BluetoothDeviceDomain) {
-        Log.d(tag, "createBond(): $device")
+        Log.d(TAG, "createBond(): $device")
         try {
             val deviceToBond = bluetoothAdapter?.getRemoteDevice(device.address)
             deviceToBond?.let {
                 deviceToBond.createBond()
             }
         } catch (e: Exception) {
-            Log.e(tag, "Creating bond has been failed. ${e.message}")
+            Log.e(TAG, "Creating bond has been failed. ${e.message}")
         }
     }
 

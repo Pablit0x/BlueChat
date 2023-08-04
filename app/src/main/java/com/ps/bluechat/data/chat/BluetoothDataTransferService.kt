@@ -7,8 +7,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import com.ps.bluechat.domain.chat.BluetoothMessage
 import com.ps.bluechat.domain.chat.TransferFailedException
+import com.ps.bluechat.util.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -20,6 +22,7 @@ import java.util.UUID
 class BluetoothDataTransferService(
     private val socket: BluetoothSocket) {
     fun listenForIncomingMessages(context: Context): Flow<BluetoothMessage> {
+        Log.d(TAG, "listenForIncomingMessages()")
         return flow {
             if (!socket.isConnected) {
                 return@flow
@@ -29,9 +32,9 @@ class BluetoothDataTransferService(
             val address = socket.remoteDevice.address
             while (true) {
                 val byteCount = try {
-                    socket.inputStream.read(buffer)
+                        socket.inputStream.read(buffer)
                 } catch (e: IOException) {
-                    throw TransferFailedException()
+                    Log.d(this@BluetoothDataTransferService.javaClass.simpleName, "err msg = ${e.message}")
                 }
 
                 val decodedString = buffer.decodeToString()
@@ -51,7 +54,7 @@ class BluetoothDataTransferService(
                         val imageByteCount = try {
                             socket.inputStream.read(completeByteArray, offset, messageSize - offset)
                         } catch (e: IOException) {
-                            throw TransferFailedException()
+                            Log.d(this@BluetoothDataTransferService.javaClass.simpleName, "err msg = ${e.message}")
                         }
 
                         offset += imageByteCount
@@ -69,12 +72,14 @@ class BluetoothDataTransferService(
     }
 
     private fun generateUniqueFileName(): String {
+        Log.d(TAG, "generateUniqueFileName()")
         val timestamp = System.currentTimeMillis()
         val randomString = UUID.randomUUID().toString().substring(0, 8)
         return "image_${timestamp}_$randomString.jpg"
     }
 
     fun saveBitmapToMediaStore(context: Context, bitmap: Bitmap): Uri? {
+        Log.d(TAG, "saveBitmapToMediaStore()")
         val filename = generateUniqueFileName()
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, filename)
@@ -97,6 +102,7 @@ class BluetoothDataTransferService(
     }
 
     suspend fun sendMessage(bytes: ByteArray): Boolean {
+        Log.d(TAG, "sendMessage()")
         return withContext(Dispatchers.IO) {
             try {
                 socket.outputStream.write(bytes)

@@ -8,15 +8,13 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import com.ps.bluechat.domain.chat.ConnectionState
+import com.ps.bluechat.util.TAG
 
 class BluetoothDeviceReceiver(
     private val onDeviceFound : (BluetoothDevice) -> Unit,
     private val onStateChanged: (connectionState: ConnectionState, BluetoothDevice) -> Unit,
     private val onBondStateChanged: () -> Unit
 ) : BroadcastReceiver() {
-
-    private val tag = BluetoothDeviceReceiver::class.simpleName
-
     @SuppressLint("MissingPermission")
     override fun onReceive(context: Context?, intent: Intent?) {
         val intentAction = intent?.action
@@ -29,7 +27,7 @@ class BluetoothDeviceReceiver(
             intent?.getParcelableExtra(BluetoothDevice.EXTRA_NAME)
         }
 
-        Log.d(tag, "onReceive(): {intentAction = $intentAction, device = $device}")
+        Log.d(TAG, "intentAction = $intentAction, device = $device")
 
         when(intentAction){
             BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(ConnectionState.CONNECTION_ACTIVE, device ?: return)
