@@ -12,6 +12,10 @@
     <string name="send_message">Send message…</string>
     <string name="waiting_for_the_other_user_to_join">Waiting for the other user to join…</string>
     <string name="has_disconnected_from_chat">has disconnected from chat."</string>
+    <string name="exit_chat">Exit Chat?</string>
+    <string name="exit_chat_description">Are you sure you want to exit the chat?</string>
+    <string name ="delete_all_messages">Delete All Messages?</string>
+    <string name="delete_all_messages_description"> Are you sure you want to delete all messages in this conversation? </string>
     <string name="confirm">Confirm</string>
     <string name="messages">Messages</string>
     <string name="cancel">Cancel</string>

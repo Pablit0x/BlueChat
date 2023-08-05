@@ -15,12 +15,12 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
-import com.ps.bluechat.presentation.BluetoothUiState
-import com.ps.bluechat.presentation.ToastUiState
 import com.ps.bluechat.presentation.components.BluetoothActionSelector
 import com.ps.bluechat.presentation.components.BluetoothDeviceList
 import com.ps.bluechat.presentation.components.DeviceNameField
 import com.ps.bluechat.presentation.components.ModeToggleField
+import com.ps.bluechat.presentation.model.BluetoothState
+import com.ps.bluechat.presentation.model.ToastState
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 
 
@@ -28,7 +28,7 @@ import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 @Composable
 fun DeviceScreen(
     direction: Direction,
-    state: BluetoothUiState,
+    state: BluetoothState,
     onCreateBond: (BluetoothDeviceDomain) -> Unit,
     onRemoveBond: (BluetoothDeviceDomain) -> Unit,
     onStartConnecting: (BluetoothDeviceDomain) -> Unit,
@@ -42,7 +42,7 @@ fun DeviceScreen(
     clearErrorMessage: () -> Unit
 
 ) {
-    var toastState by remember { mutableStateOf(ToastUiState()) }
+    var toastState by remember { mutableStateOf(ToastState()) }
 
     LaunchedEffect(key1 = state.errorMessage) {
         state.errorMessage?.let { message ->

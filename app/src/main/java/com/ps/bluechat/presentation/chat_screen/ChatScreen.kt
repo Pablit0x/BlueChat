@@ -15,8 +15,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -36,10 +36,12 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.isActive
 import com.ps.bluechat.domain.chat.isIdle
 import com.ps.bluechat.navigation.Direction
-import com.ps.bluechat.presentation.BluetoothUiState
-import com.ps.bluechat.presentation.ToastUiState
 import com.ps.bluechat.presentation.components.ChatMessage
+import com.ps.bluechat.presentation.components.CustomAlertDialog
 import com.ps.bluechat.presentation.components.gradientSurface
+import com.ps.bluechat.presentation.model.BluetoothState
+import com.ps.bluechat.presentation.model.DialogState
+import com.ps.bluechat.presentation.model.ToastState
 import com.ps.bluechat.presentation.theme.BlueChatColors
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetSuccess
@@ -49,18 +51,22 @@ import kotlinx.coroutines.delay
 @Composable
 fun ChatScreen(
     direction: Direction,
-    state: BluetoothUiState,
+    state: BluetoothState,
     onDisconnect: () -> Unit,
     onDeleteAllMessages: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     onUriSelected: (Uri?) -> Unit
 ) {
 
-    val photoPickerLauncher =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
-            onResult = { uris ->
-                onUriSelected(uris)
-            })
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uris ->
+            onUriSelected(uris)
+        })
+
+    var dialogState by remember { mutableStateOf(DialogState()) }
+
+    var openDialog by remember { mutableStateOf(false) }
 
     val context: Context = LocalContext.current
 
@@ -68,7 +74,7 @@ fun ChatScreen(
         mutableStateOf("")
     }
 
-    var toastState by remember { mutableStateOf(ToastUiState()) }
+    var toastState by remember { mutableStateOf(ToastState()) }
 
     val recipientName = rememberSaveable {
         state.connectedDevice?.deviceName ?: context.getString(
@@ -88,9 +94,9 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(true){
+    LaunchedEffect(true) {
         delay(200)
-        if(state.connectionState.isActive()){
+        if (state.connectionState.isActive()) {
             toastState = toastState.copy(
                 message = context.getString(R.string.connected),
                 isWarning = false,
@@ -99,7 +105,7 @@ fun ChatScreen(
         }
     }
 
-    if(state.connectionState.isIdle()){
+    if (state.connectionState.isIdle()) {
         toastState = toastState.copy(
             message = "$recipientName " + context.getString(R.string.has_disconnected_from_chat),
             isWarning = true,
@@ -107,122 +113,147 @@ fun ChatScreen(
         )
     }
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colors.background
-        ), title = {
-            Text(
-                text = recipientName, fontSize = 24.sp, fontWeight = FontWeight.Bold
-            )
-        }, actions = {
-            AnimatedVisibility(visible = state.messages.isNotEmpty()) {
+    if (openDialog) {
+        CustomAlertDialog(
+            onCloseDialog = {
+                openDialog = false
+            },
+            title = dialogState.title,
+            description = dialogState.description,
+            onConfirmAction = { dialogState.onConfirm },
+        )
+    } else {
+        Scaffold(topBar = {
+            CenterAlignedTopAppBar(colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = MaterialTheme.colors.background
+            ), title = {
+                Text(
+                    text = recipientName, fontSize = 24.sp, fontWeight = FontWeight.Bold
+                )
+            }, navigationIcon = {
                 IconButton(onClick = {
-                    onDeleteAllMessages(state.messages.last().address)
+                    openDialog = true
+                    dialogState = dialogState.copy(
+                        title = context.getString(R.string.exit_chat),
+                        description = context.getString(R.string.exit_chat_description),
+                        onConfirm = {
+                            onDisconnect()
+                            direction.navigateBack()
+                        })
                 }) {
                     Icon(
-                        imageVector = Icons.Default.DeleteForever, contentDescription = null
+                        imageVector = Icons.Default.ArrowBack, contentDescription = null
+                    )
+                }
+            }, actions = {
+                AnimatedVisibility(visible = state.messages.isNotEmpty()) {
+                    IconButton(onClick = {
+                        openDialog = true
+                        dialogState = dialogState.copy(
+                            title = context.getString(R.string.delete_all_messages),
+                            description = context.getString(R.string.delete_all_messages_description),
+                            onConfirm = {
+                                onDeleteAllMessages(state.messages.last().address)
+                            })
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteForever, contentDescription = null
+                        )
+                    }
+                }
+            })
+        }) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                Divider(color = BlueChatColors.NormalGrey, thickness = 1.dp)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    state = lazyColumnListState
+                ) {
+                    items(items = state.messages) { message ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            ChatMessage(
+                                message = message, modifier = Modifier.align(
+                                    if (message.isFromLocalUser) Alignment.End else Alignment.Start
+                                )
+                            )
+                        }
+                    }
+                }
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (toastState.isDisplayed) {
+                        if (toastState.isWarning) {
+                            SweetError(
+                                message = toastState.message,
+                                duration = Toast.LENGTH_SHORT,
+                                padding = PaddingValues(bottom = 90.dp),
+                                contentAlignment = Alignment.BottomCenter
+                            )
+                        } else {
+                            SweetSuccess(
+                                message = toastState.message,
+                                duration = Toast.LENGTH_SHORT,
+                                padding = PaddingValues(bottom = 90.dp),
+                                contentAlignment = Alignment.BottomCenter
+                            )
+                        }
+                        toastState.isDisplayed = false
+                    }
+
+                    TextField(
+                        value = message.value,
+                        onValueChange = { message.value = it },
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            focusedBorderColor = MaterialTheme.colors.onSecondary,
+                            cursorColor = MaterialTheme.colors.onSecondary
+                        ),
+                        enabled = state.connectionState.isActive(),
+                        leadingIcon = {
+                            Icon(imageVector = Icons.Default.Image,
+                                contentDescription = null,
+                                modifier = Modifier.clickable {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                })
+                        },
+                        trailingIcon = {
+                            Icon(imageVector = Icons.Default.Send,
+                                contentDescription = null,
+                                modifier = Modifier.clickable {
+                                    val cleanedMsg = formatMessage(message.value)
+                                    if (cleanedMsg.isNotBlank()) {
+                                        onSendMessage(cleanedMsg)
+                                        message.value = ""
+                                    }
+                                })
+                        },
+                        placeholder = { Text(text = stringResource(id = R.string.send_message)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(64.dp)
+                            .gradientSurface()
+                            .clip(RoundedCornerShape(20))
                     )
                 }
             }
-
-            IconButton(onClick = {
-                onDisconnect()
-                direction.navigateBackToHomeScreen()
-            }) {
-                Icon(
-                    imageVector = Icons.Default.ExitToApp, contentDescription = null
-                )
-            }
-        })
-    }) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            Divider(color = BlueChatColors.NormalGrey, thickness = 1.dp)
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                state = lazyColumnListState
-            ) {
-                items(items = state.messages) { message ->
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        ChatMessage(
-                            message = message, modifier = Modifier.align(
-                                if (message.isFromLocalUser) Alignment.End else Alignment.Start
-                            )
-                        )
-                    }
-                }
-            }
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                if (toastState.isDisplayed) {
-                    if (toastState.isWarning) {
-                        SweetError(
-                            message = toastState.message,
-                            duration = Toast.LENGTH_SHORT,
-                            padding = PaddingValues(bottom = 90.dp),
-                            contentAlignment = Alignment.BottomCenter
-                        )
-                    } else {
-                        SweetSuccess(
-                            message = toastState.message,
-                            duration = Toast.LENGTH_SHORT,
-                            padding = PaddingValues(bottom = 90.dp),
-                            contentAlignment = Alignment.BottomCenter
-                        )
-                    }
-                    toastState.isDisplayed = false
-                }
-
-                TextField(
-                    value = message.value,
-                    onValueChange = { message.value = it },
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        focusedBorderColor = MaterialTheme.colors.onSecondary,
-                        cursorColor = MaterialTheme.colors.onSecondary
-                    ),
-                    enabled = state.connectionState.isActive(),
-                    leadingIcon = {
-                        Icon(imageVector = Icons.Default.Image,
-                            contentDescription = null,
-                            modifier = Modifier.clickable {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            })
-                    },
-                    trailingIcon = {
-                        Icon(imageVector = Icons.Default.Send,
-                            contentDescription = null,
-                            modifier = Modifier.clickable {
-                                val cleanedMsg = formatMessage(message.value)
-                                if (cleanedMsg.isNotBlank()) {
-                                    onSendMessage(cleanedMsg)
-                                    message.value = ""
-                                }
-                            })
-                    },
-                    placeholder = { Text(text = stringResource(id = R.string.send_message)) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .height(64.dp)
-                        .gradientSurface()
-                        .clip(RoundedCornerShape(20))
-                )
-            }
         }
+
+
     }
 }
 

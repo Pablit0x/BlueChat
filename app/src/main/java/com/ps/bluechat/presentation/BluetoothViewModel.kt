@@ -9,6 +9,7 @@ import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.domain.repository.ChatRepository
+import com.ps.bluechat.presentation.model.BluetoothState
 import com.ps.bluechat.util.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,7 @@ class BluetoothViewModel @Inject constructor(
     private val chatRepository: ChatRepository
 ) : ViewModel() {
 
-    private var _state = MutableStateFlow(BluetoothUiState())
+    private var _state = MutableStateFlow(BluetoothState())
     private var deviceConnectionJob: Job? = null
 
     private val combineState = combine(
