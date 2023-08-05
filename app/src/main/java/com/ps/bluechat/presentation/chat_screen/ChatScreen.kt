@@ -2,13 +2,11 @@ package com.ps.bluechat.presentation.chat_screen
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
-import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.domain.chat.isActive
 import com.ps.bluechat.domain.chat.isIdle
 import com.ps.bluechat.navigation.Direction
@@ -44,7 +41,6 @@ import com.ps.bluechat.presentation.ToastUiState
 import com.ps.bluechat.presentation.components.ChatMessage
 import com.ps.bluechat.presentation.components.gradientSurface
 import com.ps.bluechat.presentation.theme.BlueChatColors
-import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.SuccessGreen
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetSuccess
 import kotlinx.coroutines.delay

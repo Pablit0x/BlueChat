@@ -24,15 +24,17 @@ class BluetoothDataTransferService(
     fun listenForIncomingMessages(context: Context): Flow<BluetoothMessage> {
         Log.d(TAG, "listenForIncomingMessages()")
         return flow {
-            if (!socket.isConnected) {
-                return@flow
-            }
-
             val buffer = ByteArray(4096)
             val address = socket.remoteDevice.address
+
             while (true) {
+
+                if (!socket.isConnected) {
+                    return@flow
+                }
+
                 val byteCount = try {
-                        socket.inputStream.read(buffer)
+                    socket.inputStream.read(buffer)
                 } catch (e: IOException) {
                     throw TransferFailedException()
                 }

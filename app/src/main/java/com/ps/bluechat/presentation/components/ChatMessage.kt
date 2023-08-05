@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.ps.bluechat.domain.chat.BluetoothMessage
+import com.ps.bluechat.domain.chat.MessageType
+import com.ps.bluechat.domain.chat.getType
 import com.ps.bluechat.presentation.theme.BlueChatColors
 import com.ps.bluechat.presentation.theme.BlueChatTheme
 
@@ -26,9 +28,6 @@ import com.ps.bluechat.presentation.theme.BlueChatTheme
 fun ChatMessage(
     message: BluetoothMessage, modifier: Modifier = Modifier
 ) {
-
-    val isMessageAnImage = message.imageUri != null
-
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
@@ -46,13 +45,13 @@ fun ChatMessage(
                     )
                 )
                 .background(
-                    if (isMessageAnImage) Color.Transparent
+                    if (message.getType() == MessageType.IMAGE) Color.Transparent
                     else if (message.isFromLocalUser) BlueChatColors.LocalMessageBubbleColor else BlueChatColors.RemoteMessageBubbleColor
                 )
                 .padding(top = 8.dp, bottom = 8.dp),
             horizontalAlignment = if (message.isFromLocalUser) Alignment.End else Alignment.Start
         ) {
-            if (isMessageAnImage) {
+            if (message.getType() == MessageType.IMAGE) {
                 AsyncImage(
                     model = message.imageUri,
                     contentDescription = null,

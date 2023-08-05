@@ -29,7 +29,6 @@ class AndroidBluetoothController(
     private val context: Context, private val chatRepository: ChatRepository
 ) : BluetoothController {
 
-
     private val bluetoothDeviceReceiver = BluetoothDeviceReceiver(onDeviceFound = { foundDevice ->
         _scannedDevices.update { devices ->
             val newDevice = foundDevice.toBluetoothDeviceDomain()
@@ -84,7 +83,7 @@ class AndroidBluetoothController(
     private val _isBluetoothEnabled = MutableStateFlow(false)
     private val _isDeviceDiscoverable = MutableStateFlow(false)
     private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
-    private val _errors = MutableStateFlow<String?>(null)
+    private val _errors = MutableSharedFlow<String?>()
 
 
     init {
@@ -117,8 +116,8 @@ class AndroidBluetoothController(
     override val connectionState: StateFlow<ConnectionState>
         get() = _connectionState.asStateFlow()
 
-    override val errors: StateFlow<String?>
-        get() = _errors.asStateFlow()
+    override val errors: SharedFlow<String?>
+        get() = _errors.asSharedFlow()
 
     override fun startBluetoothServer(): Flow<ConnectionResult> {
         Log.d(TAG, "startBluetoothServer()")
@@ -368,6 +367,7 @@ class AndroidBluetoothController(
             }
         }
     }
+
 
     private fun updateInitialBluetoothState() {
         bluetoothAdapter?.isEnabled?.also { isEnabled -> _isBluetoothEnabled.update { isEnabled } }

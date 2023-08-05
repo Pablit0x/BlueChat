@@ -54,8 +54,7 @@ fun BluetoothDeviceList(
                 onClick = {
                     onStartConnecting(pairedDevice)
                 },
-                onRemoveBond = { onRemoveBond(pairedDevice) },
-                modifier = Modifier.padding(8.dp)
+                onRemoveBond = { onRemoveBond(pairedDevice) }
             )
         }
 

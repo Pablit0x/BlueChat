@@ -43,14 +43,16 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
+import com.ps.bluechat.domain.chat.BluetoothMessage
+import com.ps.bluechat.domain.chat.MessageType
+import com.ps.bluechat.domain.chat.getType
 import com.ps.bluechat.presentation.theme.BlueChatColors
 
 @Composable
 fun BluetoothPairedDeviceItem(
     deviceName: String,
     onClick: () -> Unit,
-    onRemoveBond: () -> Unit,
-    modifier: Modifier = Modifier
+    onRemoveBond: () -> Unit
 ) {
 
     var isContextMenuVisible by rememberSaveable {
@@ -158,4 +160,19 @@ fun BluetoothPairedDeviceItem(
             }
         }
     }
+}
+
+fun createLastMessage(lastMsg: BluetoothMessage, deviceName: String): String {
+    val result = StringBuilder()
+    if (lastMsg.isFromLocalUser) {
+        result.append("You: ")
+    } else {
+        result.append("$deviceName: ")
+    }
+    if (lastMsg.getType() == MessageType.TEXT) {
+        result.append(lastMsg.message)
+    } else {
+        result.append("send an image...")
+    }
+    return result.toString()
 }

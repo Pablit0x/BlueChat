@@ -1,7 +1,6 @@
 package com.ps.bluechat.presentation
 
 import android.net.Uri
-import android.provider.SyncStateContract.Helpers.update
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -68,10 +67,7 @@ class BluetoothViewModel @Inject constructor(
 
     init {
         bluetoothController.connectionState.onEach { connectionState ->
-            if(state.value.connectionState != connectionState){
-                Log.d("TRIGGERED", "UPDATE!")
-                _state.update { it.copy(connectionState = connectionState) }
-            }
+            _state.update { it.copy(connectionState = connectionState) }
         }.launchIn(viewModelScope)
 
         bluetoothController.errors.onEach { error ->
@@ -81,6 +77,8 @@ class BluetoothViewModel @Inject constructor(
                 )
             }
         }.launchIn(viewModelScope)
+
+
 
         bluetoothController.registerBluetoothAdapterReceiver()
         bluetoothController.registerBluetoothDeviceReceiver()
@@ -162,11 +160,6 @@ class BluetoothViewModel @Inject constructor(
                 }
             }
         }
-    }
-
-    fun changeDeviceName(deviceName: String) {
-        Log.d(TAG, "changeDeviceName(): $deviceName")
-        bluetoothController.changeDeviceName(deviceName = deviceName)
     }
 
     fun enableBluetooth() {
