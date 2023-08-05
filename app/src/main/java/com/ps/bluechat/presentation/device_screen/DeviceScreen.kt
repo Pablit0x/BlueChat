@@ -1,5 +1,6 @@
-package com.ps.bluechat.presentation.components
+package com.ps.bluechat.presentation.device_screen
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.*
@@ -17,6 +18,12 @@ import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
+import com.ps.bluechat.presentation.ToastUiState
+import com.ps.bluechat.presentation.components.BluetoothActionSelector
+import com.ps.bluechat.presentation.components.BluetoothDeviceList
+import com.ps.bluechat.presentation.components.DeviceNameField
+import com.ps.bluechat.presentation.components.ModeToggleField
+import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -37,34 +44,20 @@ fun DeviceScreen(
     clearErrorMessage: () -> Unit
 
 ) {
-
-    var isPopupDisplayed by remember { mutableStateOf(false) }
-    var popupMessage by remember { mutableStateOf("") }
-    var connectionState by remember { mutableStateOf(ConnectionState.IDLE) }
-
-    var fabHeight by remember {
-        mutableStateOf(0)
-    }
-
-    val heightInDp = with(LocalDensity.current) { fabHeight.toDp() }
+    var toastState by remember { mutableStateOf(ToastUiState()) }
 
     LaunchedEffect(key1 = state.errorMessage) {
         state.errorMessage?.let { message ->
-            popupMessage = message
-            isPopupDisplayed = true
+            toastState = toastState.copy(
+                message = message,
+                isDisplayed = true,
+                isWarning = true
+            )
+            clearErrorMessage()
         }
     }
 
-    LaunchedEffect(key1 = state.connectionState) {
-        connectionState = when (state.connectionState) {
-            ConnectionState.CONNECTION_OPEN -> ConnectionState.CONNECTION_OPEN
-            ConnectionState.CONNECTION_REQUEST -> ConnectionState.CONNECTION_REQUEST
-            ConnectionState.CONNECTION_ACTIVE -> ConnectionState.CONNECTION_ACTIVE
-            else -> ConnectionState.IDLE
-        }
-    }
-
-    when (connectionState) {
+    when (state.connectionState) {
         ConnectionState.CONNECTION_OPEN -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -86,6 +79,7 @@ fun DeviceScreen(
                 )
             }
         }
+
         ConnectionState.CONNECTION_REQUEST -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -115,9 +109,6 @@ fun DeviceScreen(
         else -> {
             Scaffold(floatingActionButton = {
                 BluetoothActionSelector(
-                    modifier = Modifier.onGloballyPositioned {
-                        fabHeight = it.size.height
-                    },
                     scanningState = state.scanningState,
                     onStartScan = onStartScan,
                     onStopScan = onStopScan,
@@ -129,6 +120,14 @@ fun DeviceScreen(
                         .fillMaxSize()
                         .padding(padding)
                 ) {
+
+                    if(toastState.isDisplayed){
+                        SweetError(
+                            message = toastState.message,
+                            duration = Toast.LENGTH_SHORT,
+                            contentAlignment = Alignment.Center)
+                        toastState.isDisplayed = false
+                    }
 
                     ModeToggleField(
                         isOn = state.isBluetoothEnabled,
@@ -164,26 +163,7 @@ fun DeviceScreen(
                         onRemoveBond = onRemoveBond
                     )
                 }
-
-                if (isPopupDisplayed) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = heightInDp + 32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Spacer(modifier = Modifier.weight(1f))
-                        ShowCustomPopupMessage(message = popupMessage,
-                            isError = true,
-                            duration = 2500,
-                            onStopDisplaying = {
-                                isPopupDisplayed = it
-                                clearErrorMessage()
-                            })
-                    }
-                }
             }
         }
-
     }
 }

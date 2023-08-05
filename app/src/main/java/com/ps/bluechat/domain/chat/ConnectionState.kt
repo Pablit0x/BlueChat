@@ -6,3 +6,11 @@ enum class ConnectionState {
     CONNECTION_OPEN,
     CONNECTION_ACTIVE
 }
+
+fun ConnectionState.isActive() : Boolean{
+    return this == ConnectionState.CONNECTION_ACTIVE
+}
+
+fun ConnectionState.isIdle() : Boolean{
+    return this == ConnectionState.IDLE
+}

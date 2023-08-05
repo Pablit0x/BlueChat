@@ -18,9 +18,10 @@ import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.ps.bluechat.R
 import com.ps.bluechat.presentation.BluetoothViewModel
-import com.ps.bluechat.presentation.components.ChangeNameScreen
-import com.ps.bluechat.presentation.components.ChatScreen
-import com.ps.bluechat.presentation.components.DeviceScreen
+import com.ps.bluechat.presentation.change_name_screen.ChangeNameScreen
+import com.ps.bluechat.presentation.change_name_screen.ChangeNameViewModel
+import com.ps.bluechat.presentation.chat_screen.ChatScreen
+import com.ps.bluechat.presentation.device_screen.DeviceScreen
 
 @Composable
 @ExperimentalComposeUiApi
@@ -61,9 +62,13 @@ fun NavGraph(
         composable(
             route = Screen.ChangeDeviceNameScreen.route
         ) {
+            val changeNameViewModel = hiltViewModel<ChangeNameViewModel>()
+
             ChangeNameScreen(direction = direction,
                 deviceName = state.deviceName ?: context.getString(R.string.no_name),
-                onDeviceNameChange = { newName -> viewModel.changeDeviceName(deviceName = newName) })
+                onDeviceNameChange = {
+                    changeNameViewModel.changeDeviceName(deviceName = it)
+                })
         }
 
         composable(

@@ -19,7 +19,6 @@ import com.ps.bluechat.util.Constants
 import com.ps.bluechat.util.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.flow.internal.NopCollector.emit
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.*
@@ -186,8 +185,8 @@ class AndroidBluetoothController(
                     BluetoothDataTransferService(socket = socket).also { service ->
                         dataTransferService = service
                         service.listenForIncomingMessages(context = context).collect { message ->
-                                chatRepository.insertMessage(message)
-                            }
+                            chatRepository.insertMessage(message)
+                        }
                     }
 
                 } catch (e: IOException) {

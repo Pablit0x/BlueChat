@@ -1,4 +1,4 @@
-package com.ps.bluechat.presentation.components
+package com.ps.bluechat.presentation.change_name_screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -89,7 +89,7 @@ fun ChangeNameScreen(
                 Text(
                     text = stringResource(id = R.string.other_nearby_devices_can_see_this_name),
                     textAlign = TextAlign.Start,
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     color = MaterialTheme.colors.onSurface
                 )
             }

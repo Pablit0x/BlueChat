@@ -1,7 +1,9 @@
-package com.ps.bluechat.presentation.components
+package com.ps.bluechat.presentation.chat_screen
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,10 +36,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.ConnectionState
+import com.ps.bluechat.domain.chat.isActive
+import com.ps.bluechat.domain.chat.isIdle
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.BluetoothUiState
+import com.ps.bluechat.presentation.ToastUiState
+import com.ps.bluechat.presentation.components.ChatMessage
+import com.ps.bluechat.presentation.components.gradientSurface
 import com.ps.bluechat.presentation.theme.BlueChatColors
 import com.ps.bluechat.presentation.theme.BlueChatColors.Companion.SuccessGreen
+import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
+import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetSuccess
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,16 +72,7 @@ fun ChatScreen(
         mutableStateOf("")
     }
 
-    var isPopupDisplayed by remember {
-        mutableStateOf(false)
-    }
-    var popupMessage by remember {
-        mutableStateOf("")
-    }
-
-    var isPopupWarning by remember {
-        mutableStateOf(false)
-    }
+    var toastState by remember { mutableStateOf(ToastUiState()) }
 
     val recipientName = rememberSaveable {
         state.connectedDevice?.deviceName ?: context.getString(
@@ -80,33 +80,35 @@ fun ChatScreen(
         )
     }
 
-    var isTextFieldEnabled by remember { mutableStateOf(true) }
-
     val lazyColumnListState = rememberLazyListState()
 
     LaunchedEffect(key1 = state.messages.size) {
         if (state.messages.size > 6) lazyColumnListState.animateScrollToItem(state.messages.size - 1)
     }
 
-    LaunchedEffect(key1 = state.connectionState) {
-        when (state.connectionState) {
-            ConnectionState.IDLE -> {
-                isTextFieldEnabled = false
-                popupMessage =
-                    "$recipientName " + context.getString(R.string.has_disconnected_from_chat)
-                isPopupWarning = true
-                isPopupDisplayed = true
-            }
-
-            ConnectionState.CONNECTION_ACTIVE -> {
-                isTextFieldEnabled = true
-                popupMessage = context.getString(R.string.connected)
-                isPopupWarning = false
-                isPopupDisplayed = true
-            }
-
-            else -> {}
+    LaunchedEffect(state.errorMessage) {
+        if (state.errorMessage != null) {
+            direction.navigateBack
         }
+    }
+
+    LaunchedEffect(true){
+        delay(200)
+        if(state.connectionState.isActive()){
+            toastState = toastState.copy(
+                message = context.getString(R.string.connected),
+                isWarning = false,
+                isDisplayed = true
+            )
+        }
+    }
+
+    if(state.connectionState.isIdle()){
+        toastState = toastState.copy(
+            message = "$recipientName " + context.getString(R.string.has_disconnected_from_chat),
+            isWarning = true,
+            isDisplayed = true
+        )
     }
 
     Scaffold(topBar = {
@@ -168,11 +170,23 @@ fun ChatScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                if (isPopupDisplayed) {
-                    ShowCustomPopupMessage(message = popupMessage,
-                        isError = isPopupWarning,
-                        duration = 2500L,
-                        onStopDisplaying = { isPopupDisplayed = it })
+                if (toastState.isDisplayed) {
+                    if (toastState.isWarning) {
+                        SweetError(
+                            message = toastState.message,
+                            duration = Toast.LENGTH_SHORT,
+                            padding = PaddingValues(bottom = 90.dp),
+                            contentAlignment = Alignment.BottomCenter
+                        )
+                    } else {
+                        SweetSuccess(
+                            message = toastState.message,
+                            duration = Toast.LENGTH_SHORT,
+                            padding = PaddingValues(bottom = 90.dp),
+                            contentAlignment = Alignment.BottomCenter
+                        )
+                    }
+                    toastState.isDisplayed = false
                 }
 
                 TextField(
@@ -182,7 +196,7 @@ fun ChatScreen(
                         focusedBorderColor = MaterialTheme.colors.onSecondary,
                         cursorColor = MaterialTheme.colors.onSecondary
                     ),
-                    enabled = isTextFieldEnabled,
+                    enabled = state.connectionState.isActive(),
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Image,
                             contentDescription = null,
@@ -207,7 +221,7 @@ fun ChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .height(65.dp)
+                        .height(64.dp)
                         .gradientSurface()
                         .clip(RoundedCornerShape(20))
                 )
@@ -218,37 +232,4 @@ fun ChatScreen(
 
 fun formatMessage(msg: String): String {
     return msg.replace(Regex("\\s+"), " ").trim()
-}
-
-@Composable
-fun ShowCustomPopupMessage(
-    message: String, isError: Boolean, duration: Long, onStopDisplaying: (Boolean) -> Unit
-) {
-    var shouldDisplay by remember {
-        mutableStateOf(true)
-    }
-
-    LaunchedEffect(true) {
-        delay(duration)
-        shouldDisplay = false
-        onStopDisplaying(false)
-    }
-
-    AnimatedVisibility(visible = shouldDisplay) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .clip(shape = RoundedCornerShape(20))
-                .background(color = if (isError) MaterialTheme.colors.error else SuccessGreen)
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = message,
-                fontSize = 18.sp,
-                color = if (isError) MaterialTheme.colors.onError else MaterialTheme.colors.onPrimary
-            )
-        }
-    }
 }

@@ -1,6 +1,7 @@
 package com.ps.bluechat.presentation
 
 import android.net.Uri
+import android.provider.SyncStateContract.Helpers.update
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -32,27 +33,9 @@ class BluetoothViewModel @Inject constructor(
     private val bluetoothController: BluetoothController,
     private val chatRepository: ChatRepository
 ) : ViewModel() {
-    private val _state = MutableStateFlow(BluetoothUiState())
+
+    private var _state = MutableStateFlow(BluetoothUiState())
     private var deviceConnectionJob: Job? = null
-
-    init {
-
-        bluetoothController.connectionState.onEach { connectionState ->
-            _state.update { it.copy(connectionState = connectionState) }
-        }.launchIn(viewModelScope)
-
-        bluetoothController.errors.onEach { error ->
-            _state.update {
-                it.copy(
-                    errorMessage = error
-                )
-            }
-        }.launchIn(viewModelScope)
-
-        bluetoothController.registerBluetoothAdapterReceiver()
-        bluetoothController.registerBluetoothDeviceReceiver()
-
-    }
 
     private val combineState = combine(
         bluetoothController.deviceName,
@@ -82,6 +65,27 @@ class BluetoothViewModel @Inject constructor(
             messages = state.messages
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
+
+    init {
+        bluetoothController.connectionState.onEach { connectionState ->
+            if(state.value.connectionState != connectionState){
+                Log.d("TRIGGERED", "UPDATE!")
+                _state.update { it.copy(connectionState = connectionState) }
+            }
+        }.launchIn(viewModelScope)
+
+        bluetoothController.errors.onEach { error ->
+            _state.update {
+                it.copy(
+                    errorMessage = error
+                )
+            }
+        }.launchIn(viewModelScope)
+
+        bluetoothController.registerBluetoothAdapterReceiver()
+        bluetoothController.registerBluetoothDeviceReceiver()
+
+    }
 
     fun startScan() {
         Log.d(TAG, "startScan()")
@@ -201,7 +205,8 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionOpen -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_OPEN, errorMessage = null
+                            connectionState = ConnectionState.CONNECTION_OPEN,
+                            errorMessage = null
                         )
                     }
 
@@ -211,7 +216,6 @@ class BluetoothViewModel @Inject constructor(
                     result.messages.collectLatest { messages ->
                         _state.update {
                             it.copy(
-                                connectionState = ConnectionState.CONNECTION_ACTIVE,
                                 errorMessage = null,
                                 messages = messages
                             )
@@ -222,7 +226,8 @@ class BluetoothViewModel @Inject constructor(
                 is ConnectionResult.Error -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.IDLE, errorMessage = result.message
+                            connectionState = ConnectionState.IDLE,
+                            errorMessage = result.message
                         )
                     }
                 }
@@ -231,7 +236,8 @@ class BluetoothViewModel @Inject constructor(
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    connectionState = ConnectionState.IDLE, errorMessage = null
+                    connectionState = ConnectionState.IDLE,
+                    errorMessage = null
                 )
             }
         }.launchIn(viewModelScope)
