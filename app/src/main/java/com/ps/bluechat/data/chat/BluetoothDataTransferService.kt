@@ -34,7 +34,7 @@ class BluetoothDataTransferService(
                 val byteCount = try {
                         socket.inputStream.read(buffer)
                 } catch (e: IOException) {
-                    Log.d(this@BluetoothDataTransferService.javaClass.simpleName, "err msg = ${e.message}")
+                    throw TransferFailedException()
                 }
 
                 val decodedString = buffer.decodeToString()
@@ -54,7 +54,7 @@ class BluetoothDataTransferService(
                         val imageByteCount = try {
                             socket.inputStream.read(completeByteArray, offset, messageSize - offset)
                         } catch (e: IOException) {
-                            Log.d(this@BluetoothDataTransferService.javaClass.simpleName, "err msg = ${e.message}")
+                            Log.d(TAG, "err msg = ${e.message}")
                         }
 
                         offset += imageByteCount

@@ -17,13 +17,9 @@ import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.util.Constants
 import com.ps.bluechat.util.TAG
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.internal.NopCollector.emit
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.*
