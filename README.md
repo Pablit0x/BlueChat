@@ -19,8 +19,7 @@ BlueChat is an Android application that enables users to send text messages and 
 - Efficient data streaming and handling with Kotlin Flows and Coroutines.
 
 ## Video Demo
-
-https://github.com/Pablit0x/BlueChat/assets/76017191/88442367-d77c-44df-a731-cd200caaa8a1
+https://github.com/Pablit0x/BlueChat/assets/76017191/9321b7ae-4889-4dc7-b03c-68e6b73a16c7
 
 ## Requirements
 
