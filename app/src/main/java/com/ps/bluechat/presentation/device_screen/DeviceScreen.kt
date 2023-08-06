@@ -123,7 +123,9 @@ fun DeviceScreen(
                         SweetError(
                             message = toastState.message,
                             duration = Toast.LENGTH_SHORT,
-                            contentAlignment = Alignment.Center)
+                            padding = PaddingValues(16.dp),
+                            contentAlignment = Alignment.Center
+                        )
                         toastState.isDisplayed = false
                     }
 

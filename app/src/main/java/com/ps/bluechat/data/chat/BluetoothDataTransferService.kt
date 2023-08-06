@@ -20,7 +20,8 @@ import java.io.IOException
 import java.util.UUID
 
 class BluetoothDataTransferService(
-    private val socket: BluetoothSocket) {
+    private val socket: BluetoothSocket
+) {
     fun listenForIncomingMessages(context: Context): Flow<BluetoothMessage> {
         Log.d(TAG, "listenForIncomingMessages()")
         return flow {
@@ -29,7 +30,7 @@ class BluetoothDataTransferService(
                 return@flow
             }
 
-            val buffer = ByteArray(4096)
+            val buffer = ByteArray(8192)
             val address = socket.remoteDevice.address
 
             while (true) {
@@ -57,11 +58,12 @@ class BluetoothDataTransferService(
                         val imageByteCount = try {
                             socket.inputStream.read(completeByteArray, offset, messageSize - offset)
                         } catch (e: IOException) {
-                            Log.d(TAG, "err msg = ${e.message}")
+                            throw TransferFailedException()
                         }
 
                         offset += imageByteCount
                     }
+
                     val bitmap =
                         BitmapFactory.decodeByteArray(completeByteArray, 0, completeByteArray.size)
 

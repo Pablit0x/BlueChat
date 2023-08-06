@@ -173,12 +173,14 @@ class AndroidBluetoothController(
                 throw SecurityException(context.getString(R.string.bluetooth_denied))
             }
 
+
+            stopScanning()
+
+            currentClientSocket?.close()
             currentClientSocket = bluetoothAdapter?.getRemoteDevice(device.address)
                 ?.createRfcommSocketToServiceRecord(
                     UUID.fromString(Constants.SERVICE_UUID)
                 )
-
-            stopScanning()
 
             emit(ConnectionResult.ConnectionRequest)
 
@@ -222,8 +224,9 @@ class AndroidBluetoothController(
             time = getCurrentTime()
         )
 
-        dataTransferService?.sendMessage(bluetoothMessage.toByteArray())
-        chatRepository.insertMessage(bluetoothMessage = bluetoothMessage)
+        if (dataTransferService?.sendMessage(bluetoothMessage.toByteArray()) == true) {
+            chatRepository.insertMessage(bluetoothMessage = bluetoothMessage)
+        }
 
         return bluetoothMessage
     }
@@ -237,18 +240,18 @@ class AndroidBluetoothController(
         }
 
         val desiredChunkSize = 1024
-        val desiredWidth = 300
-        val desiredHeight = 300
+        val desiredWidth = 500
+        val desiredHeight = 500
         val quality = 15
 
         // Convert the image URI to a Bitmap
         val bitmap = BitmapFactory.decodeStream(context.contentResolver.openInputStream(uri))
 
-        val realUri =
-            dataTransferService?.saveBitmapToMediaStore(context = context, bitmap = bitmap)
-
         // Downscale the bitmap to desired dimensions
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, desiredWidth, desiredHeight, true)
+
+        val savedUri =
+            dataTransferService?.saveBitmapToMediaStore(context = context, bitmap = scaledBitmap)
 
         // Compress the scaled bitmap and convert it to a byte array
         val outputStream = ByteArrayOutputStream()
@@ -270,7 +273,7 @@ class AndroidBluetoothController(
         }
 
         val bluetoothMessage = BluetoothMessage(
-            imageUri = realUri,
+            imageUri = savedUri,
             isFromLocalUser = true,
             address = currentClientSocket?.remoteDevice?.address
                 ?: context.getString(R.string.unknown),
@@ -278,6 +281,7 @@ class AndroidBluetoothController(
         )
 
         chatRepository.insertMessage(bluetoothMessage = bluetoothMessage)
+
         return bluetoothMessage
     }
 
@@ -356,9 +360,9 @@ class AndroidBluetoothController(
 
     override fun release() {
         Log.d(TAG, "release()")
+        closeConnection()
         context.unregisterReceiver(bluetoothDeviceReceiver)
         context.unregisterReceiver(bluetoothAdapterReceiver)
-        closeConnection()
     }
 
     private fun updatePairedDevices() {

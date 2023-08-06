@@ -50,7 +50,7 @@ fun BluetoothDeviceList(
         }
         items(pairedDevices) { pairedDevice ->
             BluetoothPairedDeviceItem(
-                deviceName = pairedDevice.deviceName ?: stringResource(id = R.string.no_name),
+                deviceName = pairedDevice.deviceName,
                 onClick = {
                     onStartConnecting(pairedDevice)
                 },

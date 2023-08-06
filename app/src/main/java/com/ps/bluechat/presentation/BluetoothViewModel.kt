@@ -90,6 +90,11 @@ class BluetoothViewModel @Inject constructor(
         bluetoothController.startScanning()
     }
 
+    fun stopScan() {
+        Log.d(TAG, "stopScan()")
+        bluetoothController.stopScanning()
+    }
+
     fun createBond(device: BluetoothDeviceDomain) {
         Log.d(TAG, "createBond(): $device")
         bluetoothController.createBond(device = device)
@@ -98,11 +103,6 @@ class BluetoothViewModel @Inject constructor(
     fun removeBond(device: BluetoothDeviceDomain) {
         Log.d(TAG, "removeBond(): $device")
         bluetoothController.removeBond(device = device)
-    }
-
-    fun stopScan() {
-        Log.d(TAG, "stopScan()")
-        bluetoothController.stopScanning()
     }
 
     fun observeIncomingConnections() {
@@ -134,7 +134,6 @@ class BluetoothViewModel @Inject constructor(
         bluetoothController.disableBluetooth()
     }
 
-
     fun enableDiscoverability() {
         Log.d(TAG, "enableDiscoverability()")
         bluetoothController.enableDiscoverability()
@@ -152,7 +151,7 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionRequest -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.REQUEST, errorMessage = null
+                            connectionState = ConnectionState.REQUEST
                         )
                     }
                 }
@@ -160,7 +159,7 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionOpen -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.OPEN, errorMessage = null
+                            connectionState = ConnectionState.OPEN
                         )
                     }
 
@@ -170,7 +169,7 @@ class BluetoothViewModel @Inject constructor(
                     result.messages.collectLatest { messages ->
                         _state.update {
                             it.copy(
-                                errorMessage = null, messages = messages
+                                messages = messages
                             )
                         }
                     }
@@ -184,11 +183,12 @@ class BluetoothViewModel @Inject constructor(
                     }
                 }
             }
-        }.catch {
+        }.catch { throwable ->
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    connectionState = ConnectionState.IDLE, errorMessage = null
+                    connectionState = ConnectionState.IDLE,
+                    errorMessage = throwable.message
                 )
             }
         }.launchIn(viewModelScope)
