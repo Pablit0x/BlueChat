@@ -56,13 +56,14 @@ class BluetoothViewModel @Inject constructor(
         bluetoothController.isBluetoothEnabled,
         bluetoothController.isDeviceDiscoverable,
         bluetoothController.connectedDevice,
+        bluetoothController.messages,
         combineState
-    ) { isBluetoothEnabled, isDeviceDiscoverable, connectedDevice, state ->
+    ) { isBluetoothEnabled, isDeviceDiscoverable, connectedDevice, messages, state ->
         state.copy(
             isBluetoothEnabled = isBluetoothEnabled,
             isDeviceDiscoverable = isDeviceDiscoverable,
             connectedDevice = connectedDevice,
-            messages = state.messages
+            messages = messages
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
@@ -79,8 +80,6 @@ class BluetoothViewModel @Inject constructor(
             }
         }.launchIn(viewModelScope)
 
-
-
         bluetoothController.registerBluetoothAdapterReceiver()
         bluetoothController.registerBluetoothDeviceReceiver()
 
@@ -89,14 +88,6 @@ class BluetoothViewModel @Inject constructor(
     fun startScan() {
         Log.d(TAG, "startScan()")
         bluetoothController.startScanning()
-    }
-
-    fun clearAllMessages(address: String){
-        viewModelScope.launch {
-            withContext(Dispatchers.IO){
-                chatRepository.clearMessagesWithUserByAddress(address = address)
-            }
-        }
     }
 
     fun createBond(device: BluetoothDeviceDomain) {
@@ -116,51 +107,21 @@ class BluetoothViewModel @Inject constructor(
 
     fun observeIncomingConnections() {
         Log.d(TAG, "observeIncomingConnections()")
-        _state.update { it.copy(connectionState = ConnectionState.CONNECTION_OPEN) }
+        _state.update { it.copy(connectionState = ConnectionState.OPEN) }
         deviceConnectionJob = bluetoothController.startBluetoothServer().observe()
     }
 
     fun connectToDevice(device: BluetoothDeviceDomain) {
         Log.d(TAG, "connectToDevice(): ${device.deviceName}")
-        _state.update { it.copy(connectionState = ConnectionState.CONNECTION_REQUEST) }
+        _state.update { it.copy(connectionState = ConnectionState.REQUEST) }
         deviceConnectionJob = bluetoothController.connectToDevice(device).observe()
     }
 
     fun disconnectDevice() {
         Log.d(TAG, "disconnectDevice")
         deviceConnectionJob?.cancel()
-        bluetoothController.closeConnection()
         _state.update { it.copy(connectionState = ConnectionState.IDLE) }
-    }
-
-    fun sendMessage(message: String) {
-        Log.d(TAG, "sendMessage(): $message")
-        viewModelScope.launch {
-            val bluetoothMessage = bluetoothController.trySendMessage(message = message)
-            if (bluetoothMessage != null) {
-                _state.update {
-                    it.copy(
-                        messages = it.messages + bluetoothMessage
-                    )
-                }
-            }
-        }
-    }
-
-    fun sendImages(uri: Uri?) {
-        Log.d(TAG, "sendImages(): $uri")
-        uri?.let { imageUri ->
-            viewModelScope.launch {
-                val bluetoothMessage = bluetoothController.trySendImage(uri = imageUri)
-                if (bluetoothMessage != null) {
-                    _state.update {
-                        it.copy(
-                            messages = it.messages + bluetoothMessage
-                        )
-                    }
-                }
-            }
-        }
+        bluetoothController.closeConnection()
     }
 
     fun enableBluetooth() {
@@ -187,11 +148,11 @@ class BluetoothViewModel @Inject constructor(
     private fun Flow<ConnectionResult>.observe(): Job {
         return onEach { result ->
             when (result) {
+
                 ConnectionResult.ConnectionRequest -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_REQUEST,
-                            errorMessage = null
+                            connectionState = ConnectionState.REQUEST, errorMessage = null
                         )
                     }
                 }
@@ -199,8 +160,7 @@ class BluetoothViewModel @Inject constructor(
                 ConnectionResult.ConnectionOpen -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.CONNECTION_OPEN,
-                            errorMessage = null
+                            connectionState = ConnectionState.OPEN, errorMessage = null
                         )
                     }
 
@@ -210,8 +170,7 @@ class BluetoothViewModel @Inject constructor(
                     result.messages.collectLatest { messages ->
                         _state.update {
                             it.copy(
-                                errorMessage = null,
-                                messages = messages
+                                errorMessage = null, messages = messages
                             )
                         }
                     }
@@ -220,8 +179,7 @@ class BluetoothViewModel @Inject constructor(
                 is ConnectionResult.Error -> {
                     _state.update {
                         it.copy(
-                            connectionState = ConnectionState.IDLE,
-                            errorMessage = result.message
+                            connectionState = ConnectionState.IDLE, errorMessage = result.message
                         )
                     }
                 }
@@ -230,8 +188,7 @@ class BluetoothViewModel @Inject constructor(
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    connectionState = ConnectionState.IDLE,
-                    errorMessage = null
+                    connectionState = ConnectionState.IDLE, errorMessage = null
                 )
             }
         }.launchIn(viewModelScope)
@@ -242,6 +199,30 @@ class BluetoothViewModel @Inject constructor(
             it.copy(
                 errorMessage = null
             )
+        }
+    }
+
+    fun sendMessage(message: String) {
+        Log.d(TAG, "sendMessage(): $message")
+        viewModelScope.launch {
+            bluetoothController.trySendMessage(message = message)
+        }
+    }
+
+    fun sendImages(uri: Uri?) {
+        Log.d(TAG, "sendImages(): $uri")
+        uri?.let { imageUri ->
+            viewModelScope.launch {
+                bluetoothController.trySendImage(uri = imageUri)
+            }
+        }
+    }
+
+    fun clearAllMessages(address: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                chatRepository.clearMessagesWithUserByAddress(address = address)
+            }
         }
     }
 

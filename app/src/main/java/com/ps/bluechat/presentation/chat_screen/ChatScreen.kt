@@ -33,36 +33,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
+import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
+import com.ps.bluechat.domain.chat.BluetoothMessage
+import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.domain.chat.isActive
 import com.ps.bluechat.domain.chat.isIdle
 import com.ps.bluechat.navigation.Direction
 import com.ps.bluechat.presentation.components.ChatMessage
 import com.ps.bluechat.presentation.components.CustomAlertDialog
 import com.ps.bluechat.presentation.components.gradientSurface
-import com.ps.bluechat.presentation.model.BluetoothState
 import com.ps.bluechat.presentation.model.DialogState
 import com.ps.bluechat.presentation.model.ToastState
 import com.ps.bluechat.presentation.theme.BlueChatColors
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetSuccess
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     direction: Direction,
-    state: BluetoothState,
+    allMessages: List<BluetoothMessage>,
+    clientDevice: BluetoothDeviceDomain?,
+    connectionState: ConnectionState,
     onDisconnect: () -> Unit,
     onDeleteAllMessages: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     onUriSelected: (Uri?) -> Unit
 ) {
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uris ->
-            onUriSelected(uris)
-        })
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
+            onResult = { uris ->
+                onUriSelected(uris)
+            })
 
     var dialogState by remember { mutableStateOf(DialogState()) }
 
@@ -77,26 +80,25 @@ fun ChatScreen(
     var toastState by remember { mutableStateOf(ToastState()) }
 
     val recipientName = rememberSaveable {
-        state.connectedDevice?.deviceName ?: context.getString(
+        clientDevice?.deviceName ?: context.getString(
             R.string.unknown
         )
     }
 
-    val lazyColumnListState = rememberLazyListState()
-
-    LaunchedEffect(key1 = state.messages.size) {
-        if (state.messages.size > 6) lazyColumnListState.animateScrollToItem(state.messages.size - 1)
+    val recipientAddress: String? = remember {
+        clientDevice?.address
     }
 
-    LaunchedEffect(state.errorMessage) {
-        if (state.errorMessage != null) {
-            direction.navigateBack
-        }
+    val messages = allMessages.filter { it.address == recipientAddress }
+
+    val lazyColumnListState = rememberLazyListState()
+
+    LaunchedEffect(key1 = messages.size) {
+        if (messages.size > 6) lazyColumnListState.animateScrollToItem(messages.size - 1)
     }
 
     LaunchedEffect(true) {
-        delay(200)
-        if (state.connectionState.isActive()) {
+        if (connectionState.isActive()) {
             toastState = toastState.copy(
                 message = context.getString(R.string.connected),
                 isWarning = false,
@@ -105,7 +107,7 @@ fun ChatScreen(
         }
     }
 
-    if (state.connectionState.isIdle()) {
+    if (connectionState.isIdle()) {
         toastState = toastState.copy(
             message = "$recipientName " + context.getString(R.string.has_disconnected_from_chat),
             isWarning = true,
@@ -120,7 +122,7 @@ fun ChatScreen(
             },
             title = dialogState.title,
             description = dialogState.description,
-            onConfirmAction = { dialogState.onConfirm },
+            onConfirmAction = { dialogState.onConfirm() },
         )
     } else {
         Scaffold(topBar = {
@@ -133,12 +135,11 @@ fun ChatScreen(
             }, navigationIcon = {
                 IconButton(onClick = {
                     openDialog = true
-                    dialogState = dialogState.copy(
-                        title = context.getString(R.string.exit_chat),
+                    dialogState = dialogState.copy(title = context.getString(R.string.exit_chat),
                         description = context.getString(R.string.exit_chat_description),
                         onConfirm = {
                             onDisconnect()
-                            direction.navigateBack()
+                            direction.navigateBackToHomeScreen()
                         })
                 }) {
                     Icon(
@@ -146,15 +147,17 @@ fun ChatScreen(
                     )
                 }
             }, actions = {
-                AnimatedVisibility(visible = state.messages.isNotEmpty()) {
+                AnimatedVisibility(visible = messages.isNotEmpty()) {
                     IconButton(onClick = {
                         openDialog = true
-                        dialogState = dialogState.copy(
-                            title = context.getString(R.string.delete_all_messages),
-                            description = context.getString(R.string.delete_all_messages_description),
-                            onConfirm = {
-                                onDeleteAllMessages(state.messages.last().address)
-                            })
+                        dialogState =
+                            dialogState.copy(title = context.getString(R.string.delete_all_messages),
+                                description = context.getString(R.string.delete_all_messages_description),
+                                onConfirm = {
+                                    if (recipientAddress != null) {
+                                        onDeleteAllMessages(recipientAddress)
+                                    }
+                                })
                     }) {
                         Icon(
                             imageVector = Icons.Default.DeleteForever, contentDescription = null
@@ -177,7 +180,7 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     state = lazyColumnListState
                 ) {
-                    items(items = state.messages) { message ->
+                    items(items = messages) { message ->
                         Column(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -220,7 +223,7 @@ fun ChatScreen(
                             focusedBorderColor = MaterialTheme.colors.onSecondary,
                             cursorColor = MaterialTheme.colors.onSecondary
                         ),
-                        enabled = state.connectionState.isActive(),
+                        enabled = connectionState.isActive(),
                         leadingIcon = {
                             Icon(imageVector = Icons.Default.Image,
                                 contentDescription = null,

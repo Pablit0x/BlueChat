@@ -76,7 +76,9 @@ fun NavGraph(
         ) {
             ChatScreen(
                 direction = direction,
-                state = state,
+                allMessages = state.messages,
+                clientDevice = state.connectedDevice,
+                connectionState = state.connectionState,
                 onDisconnect = viewModel::disconnectDevice,
                 onSendMessage = viewModel::sendMessage,
                 onUriSelected = viewModel::sendImages,

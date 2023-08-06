@@ -56,7 +56,7 @@ fun DeviceScreen(
     }
 
     when (state.connectionState) {
-        ConnectionState.CONNECTION_OPEN -> {
+        ConnectionState.OPEN -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -78,7 +78,7 @@ fun DeviceScreen(
             }
         }
 
-        ConnectionState.CONNECTION_REQUEST -> {
+        ConnectionState.REQUEST -> {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -100,7 +100,7 @@ fun DeviceScreen(
             }
         }
 
-        ConnectionState.CONNECTION_ACTIVE -> {
+        ConnectionState.ACTIVE -> {
             direction.navigateToChatScreen()
         }
 

@@ -30,8 +30,15 @@ class BluetoothDeviceReceiver(
         Log.d(TAG, "intentAction = $intentAction, device = $device")
 
         when(intentAction){
-            BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(ConnectionState.CONNECTION_ACTIVE, device ?: return)
-            BluetoothDevice.ACTION_ACL_DISCONNECTED -> onStateChanged(ConnectionState.IDLE, device ?: return)
+            BluetoothDevice.ACTION_ACL_CONNECTED -> onStateChanged(
+                ConnectionState.ACTIVE,
+                device ?: return
+            )
+
+            BluetoothDevice.ACTION_ACL_DISCONNECTED -> onStateChanged(
+                ConnectionState.IDLE,
+                device ?: return
+            )
             BluetoothDevice.ACTION_FOUND -> device?.let(onDeviceFound)
             BluetoothDevice.ACTION_BOND_STATE_CHANGED -> onBondStateChanged()
         }

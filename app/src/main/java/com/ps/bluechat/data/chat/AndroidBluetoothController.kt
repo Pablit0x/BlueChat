@@ -17,8 +17,10 @@ import com.ps.bluechat.domain.chat.*
 import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.util.Constants
 import com.ps.bluechat.util.TAG
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.*
@@ -41,7 +43,7 @@ class AndroidBluetoothController(
         if (bluetoothAdapter?.bondedDevices?.contains(bluetoothDevice) == true) {
             _connectionState.update { connectionState }
             when (connectionState) {
-                ConnectionState.CONNECTION_ACTIVE -> _connectedDevice.update { bluetoothDevice.toBluetoothDeviceDomain() }
+                ConnectionState.ACTIVE -> _connectedDevice.update { bluetoothDevice.toBluetoothDeviceDomain() }
                 ConnectionState.IDLE -> _connectedDevice.update { null }
                 else -> {}
             }
@@ -74,6 +76,8 @@ class AndroidBluetoothController(
     private var currentServerSocket: BluetoothServerSocket? = null
     private var currentClientSocket: BluetoothSocket? = null
 
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+
 
     private val _deviceName = MutableStateFlow<String?>(null)
     private val _connectedDevice = MutableStateFlow<BluetoothDeviceDomain?>(null)
@@ -83,10 +87,12 @@ class AndroidBluetoothController(
     private val _isBluetoothEnabled = MutableStateFlow(false)
     private val _isDeviceDiscoverable = MutableStateFlow(false)
     private val _connectionState = MutableStateFlow(ConnectionState.IDLE)
+    private val _messages = MutableStateFlow<List<BluetoothMessage>>(emptyList())
     private val _errors = MutableSharedFlow<String?>()
 
 
     init {
+        getAllMessages()
         updatePairedDevices()
         updateInitialBluetoothState()
         updateDeviceName()
@@ -115,6 +121,9 @@ class AndroidBluetoothController(
 
     override val connectionState: StateFlow<ConnectionState>
         get() = _connectionState.asStateFlow()
+
+    override val messages: StateFlow<List<BluetoothMessage>>
+        get() = _messages.asStateFlow()
 
     override val errors: SharedFlow<String?>
         get() = _errors.asSharedFlow()
@@ -371,6 +380,16 @@ class AndroidBluetoothController(
 
     private fun updateInitialBluetoothState() {
         bluetoothAdapter?.isEnabled?.also { isEnabled -> _isBluetoothEnabled.update { isEnabled } }
+    }
+
+    private fun getAllMessages() {
+        coroutineScope.launch {
+            chatRepository.getAllMessages().collect { messages ->
+                _messages.update {
+                    messages
+                }
+            }
+        }
     }
 
     override fun changeDeviceName(deviceName: String) {

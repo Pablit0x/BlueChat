@@ -2,13 +2,13 @@ package com.ps.bluechat.domain.chat
 
 enum class ConnectionState {
     IDLE,
-    CONNECTION_REQUEST,
-    CONNECTION_OPEN,
-    CONNECTION_ACTIVE
+    REQUEST,
+    OPEN,
+    ACTIVE
 }
 
 fun ConnectionState.isActive() : Boolean{
-    return this == ConnectionState.CONNECTION_ACTIVE
+    return this == ConnectionState.ACTIVE
 }
 
 fun ConnectionState.isIdle() : Boolean{

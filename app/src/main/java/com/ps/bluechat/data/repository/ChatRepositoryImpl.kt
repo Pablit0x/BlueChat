@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.Flow
 class ChatRepositoryImpl(
     private val chatDao: ChatDao
 ) : ChatRepository{
+    override fun getAllMessages(): Flow<List<BluetoothMessage>> {
+        return chatDao.getAllMessages()
+    }
+
     override fun getMessagesByAddress(address: String): Flow<List<BluetoothMessage>> {
         return chatDao.getMessagesByAddress(address = address)
     }
