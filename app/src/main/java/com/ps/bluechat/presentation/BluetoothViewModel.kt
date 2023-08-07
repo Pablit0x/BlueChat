@@ -1,6 +1,5 @@
 package com.ps.bluechat.presentation
 
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,30 +7,24 @@ import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionResult
 import com.ps.bluechat.domain.chat.ConnectionState
-import com.ps.bluechat.domain.repository.ChatRepository
 import com.ps.bluechat.presentation.model.BluetoothState
 import com.ps.bluechat.util.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class BluetoothViewModel @Inject constructor(
-    private val bluetoothController: BluetoothController,
-    private val chatRepository: ChatRepository
+    private val bluetoothController: BluetoothController
 ) : ViewModel() {
 
     private var _state = MutableStateFlow(BluetoothState())
@@ -55,15 +48,11 @@ class BluetoothViewModel @Inject constructor(
     val state = combine(
         bluetoothController.isBluetoothEnabled,
         bluetoothController.isDeviceDiscoverable,
-        bluetoothController.connectedDevice,
-        bluetoothController.messages,
         combineState
-    ) { isBluetoothEnabled, isDeviceDiscoverable, connectedDevice, messages, state ->
+    ) { isBluetoothEnabled, isDeviceDiscoverable, state ->
         state.copy(
             isBluetoothEnabled = isBluetoothEnabled,
             isDeviceDiscoverable = isDeviceDiscoverable,
-            connectedDevice = connectedDevice,
-            messages = messages
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), _state.value)
 
@@ -147,7 +136,6 @@ class BluetoothViewModel @Inject constructor(
     private fun Flow<ConnectionResult>.observe(): Job {
         return onEach { result ->
             when (result) {
-
                 ConnectionResult.ConnectionRequest -> {
                     _state.update {
                         it.copy(
@@ -161,17 +149,6 @@ class BluetoothViewModel @Inject constructor(
                         it.copy(
                             connectionState = ConnectionState.OPEN
                         )
-                    }
-
-                }
-
-                is ConnectionResult.ConnectionEstablished -> {
-                    result.messages.collectLatest { messages ->
-                        _state.update {
-                            it.copy(
-                                messages = messages
-                            )
-                        }
                     }
                 }
 
@@ -187,8 +164,7 @@ class BluetoothViewModel @Inject constructor(
             bluetoothController.closeConnection()
             _state.update {
                 it.copy(
-                    connectionState = ConnectionState.IDLE,
-                    errorMessage = throwable.message
+                    connectionState = ConnectionState.IDLE, errorMessage = throwable.message
                 )
             }
         }.launchIn(viewModelScope)
@@ -199,30 +175,6 @@ class BluetoothViewModel @Inject constructor(
             it.copy(
                 errorMessage = null
             )
-        }
-    }
-
-    fun sendMessage(message: String) {
-        Log.d(TAG, "sendMessage(): $message")
-        viewModelScope.launch {
-            bluetoothController.trySendMessage(message = message)
-        }
-    }
-
-    fun sendImages(uri: Uri?) {
-        Log.d(TAG, "sendImages(): $uri")
-        uri?.let { imageUri ->
-            viewModelScope.launch {
-                bluetoothController.trySendImage(uri = imageUri)
-            }
-        }
-    }
-
-    fun clearAllMessages(address: String) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                chatRepository.clearMessagesWithUserByAddress(address = address)
-            }
         }
     }
 

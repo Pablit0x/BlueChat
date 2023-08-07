@@ -35,9 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ps.bluechat.R
-import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
-import com.ps.bluechat.domain.chat.BluetoothMessage
-import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.domain.chat.MessageType
 import com.ps.bluechat.domain.chat.getType
 import com.ps.bluechat.domain.chat.isActive
@@ -56,20 +53,18 @@ import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetSuccess
 @Composable
 fun ChatScreen(
     direction: Direction,
-    allMessages: List<BluetoothMessage>,
-    clientDevice: BluetoothDeviceDomain?,
-    connectionState: ConnectionState,
+    state: ChatState,
     onDisconnect: () -> Unit,
     onDeleteAllMessages: (String) -> Unit,
     onSendMessage: (String) -> Unit,
     onUriSelected: (Uri?) -> Unit
 ) {
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uris ->
-            onUriSelected(uris)
-        })
+    val photoPickerLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.PickVisualMedia(),
+            onResult = { uris ->
+                onUriSelected(uris)
+            })
 
     var dialogState by remember { mutableStateOf(DialogState()) }
 
@@ -77,30 +72,18 @@ fun ChatScreen(
 
     val context: Context = LocalContext.current
 
-    val message = rememberSaveable {
+    var message by rememberSaveable {
         mutableStateOf("")
     }
 
     var toastState by remember { mutableStateOf(ToastState()) }
 
-    val recipientName = rememberSaveable {
-        clientDevice?.deviceName ?: context.getString(
-            R.string.unknown
-        )
-    }
-
-    val recipientAddress: String? = remember {
-        clientDevice?.address
-    }
-
-    val messages = allMessages.filter { it.address == recipientAddress }
-
     val lazyColumnListState = rememberLazyListState()
 
-    LaunchedEffect(key1 = messages.size) {
-        if (messages.isNotEmpty()) {
-            val lastMessage = messages[messages.size - 1]
-            lazyColumnListState.animateScrollToItem(messages.size - 1)
+    LaunchedEffect(key1 = state.messages.size) {
+        if (state.messages.isNotEmpty()) {
+            val lastMessage = state.messages[state.messages.size - 1]
+            lazyColumnListState.animateScrollToItem(state.messages.size - 1)
             if (lastMessage.getType() == MessageType.IMAGE) {
                 // For Images we have to scroll a little bit more
                 lazyColumnListState.animateScrollBy(500F)
@@ -109,7 +92,7 @@ fun ChatScreen(
     }
 
     LaunchedEffect(true) {
-        if (connectionState.isActive()) {
+        if (state.connectionState.isActive()) {
             toastState = toastState.copy(
                 message = context.getString(R.string.connected),
                 isWarning = false,
@@ -118,11 +101,11 @@ fun ChatScreen(
         }
     }
 
-    if (connectionState.isIdle()) {
+    if (state.connectionState.isIdle()) {
         toastState = toastState.copy(
-            message = "$recipientName " + context.getString(R.string.has_disconnected_from_chat),
-            isWarning = true,
-            isDisplayed = true
+            message = "${state.recipient?.deviceName ?: stringResource(id = R.string.unknown)} " + context.getString(
+                R.string.has_disconnected_from_chat
+            ), isWarning = true, isDisplayed = true
         )
     }
 
@@ -131,7 +114,9 @@ fun ChatScreen(
             containerColor = MaterialTheme.colors.background
         ), title = {
             Text(
-                text = recipientName, fontSize = 24.sp, fontWeight = FontWeight.Bold
+                text = state.recipient?.deviceName ?: stringResource(id = R.string.unknown),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
         }, navigationIcon = {
             IconButton(onClick = {
@@ -148,16 +133,14 @@ fun ChatScreen(
                 )
             }
         }, actions = {
-            AnimatedVisibility(visible = messages.isNotEmpty()) {
+            AnimatedVisibility(visible = state.messages.isNotEmpty()) {
                 IconButton(onClick = {
                     openDialog = true
                     dialogState =
                         dialogState.copy(title = context.getString(R.string.delete_all_messages),
                             description = context.getString(R.string.delete_all_messages_description),
                             onConfirm = {
-                                if (recipientAddress != null) {
-                                    onDeleteAllMessages(recipientAddress)
-                                }
+                                state.recipient?.address?.let(onDeleteAllMessages)
                             })
                 }) {
                     Icon(
@@ -194,7 +177,7 @@ fun ChatScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = lazyColumnListState
             ) {
-                items(items = messages) { message ->
+                items(items = state.messages) { message ->
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -231,13 +214,13 @@ fun ChatScreen(
                 }
 
                 TextField(
-                    value = message.value,
-                    onValueChange = { message.value = it },
+                    value = message,
+                    onValueChange = { message = it },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colors.onSecondary,
                         cursorColor = MaterialTheme.colors.onSecondary
                     ),
-                    enabled = connectionState.isActive(),
+                    enabled = state.connectionState.isActive(),
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Image,
                             contentDescription = null,
@@ -251,11 +234,9 @@ fun ChatScreen(
                         Icon(imageVector = Icons.Default.Send,
                             contentDescription = null,
                             modifier = Modifier.clickable {
-                                val cleanedMsg = formatMessage(message.value)
-                                if (cleanedMsg.isNotBlank()) {
-                                    onSendMessage(cleanedMsg)
-                                    message.value = ""
-                                }
+                                val cleanedMsg = formatMessage(message)
+                                cleanedMsg?.let(onSendMessage)
+                                message = ""
                             })
                     },
                     placeholder = { Text(text = stringResource(id = R.string.send_message)) },
@@ -273,6 +254,7 @@ fun ChatScreen(
     }
 }
 
-fun formatMessage(msg: String): String {
-    return msg.replace(Regex("\\s+"), " ").trim()
+fun formatMessage(msg: String): String? {
+    val formattedMessage = msg.replace(Regex("\\s+"), " ").trim()
+    return formattedMessage.ifBlank { null }
 }

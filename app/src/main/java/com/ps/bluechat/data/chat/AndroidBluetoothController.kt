@@ -142,15 +142,7 @@ class AndroidBluetoothController(
             emit(ConnectionResult.ConnectionOpen)
 
             currentClientSocket = currentServerSocket?.accept(10000)
-
-
             currentClientSocket?.let { socket ->
-
-                val clientAddress = socket.remoteDevice.address
-                val messages = chatRepository.getMessagesByAddress(address = clientAddress)
-
-                emit(ConnectionResult.ConnectionEstablished(messages = messages))
-
                 currentServerSocket?.close()
                 val service = BluetoothDataTransferService(socket = socket)
                 dataTransferService = service
@@ -159,8 +151,6 @@ class AndroidBluetoothController(
                     chatRepository.insertMessage(message)
                 }
             }
-        }.catch { exception ->
-            emit(ConnectionResult.Error(exception.message ?: "Unknown error occurred"))
         }.onCompletion {
             closeConnection()
         }.flowOn(Dispatchers.IO)
@@ -187,11 +177,6 @@ class AndroidBluetoothController(
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
-
-                    val clientAddress = socket.remoteDevice.address
-                    val messages = chatRepository.getMessagesByAddress(address = clientAddress)
-                    emit(ConnectionResult.ConnectionEstablished(messages = messages))
-
                     BluetoothDataTransferService(socket = socket).also { service ->
                         dataTransferService = service
                         service.listenForIncomingMessages(context = context).collect { message ->
@@ -207,6 +192,7 @@ class AndroidBluetoothController(
             closeConnection()
         }.flowOn(Dispatchers.IO)
     }
+
 
     override suspend fun trySendMessage(message: String): BluetoothMessage? {
         Log.d(TAG, "trySendMessage(): $message")
@@ -291,6 +277,7 @@ class AndroidBluetoothController(
         currentClientSocket?.close()
         currentClientSocket = null
         currentServerSocket = null
+
     }
 
     @Suppress("DEPRECATION")

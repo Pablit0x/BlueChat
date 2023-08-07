@@ -21,6 +21,7 @@ import com.ps.bluechat.presentation.BluetoothViewModel
 import com.ps.bluechat.presentation.change_name_screen.ChangeNameScreen
 import com.ps.bluechat.presentation.change_name_screen.ChangeNameViewModel
 import com.ps.bluechat.presentation.chat_screen.ChatScreen
+import com.ps.bluechat.presentation.chat_screen.ChatViewModel
 import com.ps.bluechat.presentation.device_screen.DeviceScreen
 
 @Composable
@@ -74,15 +75,17 @@ fun NavGraph(
         composable(
             route = Screen.ChatScreen.route
         ) {
+
+            val chatViewModel = hiltViewModel<ChatViewModel>()
+            val chatState by chatViewModel.state.collectAsState()
+
             ChatScreen(
                 direction = direction,
-                allMessages = state.messages,
-                clientDevice = state.connectedDevice,
-                connectionState = state.connectionState,
-                onDisconnect = viewModel::disconnectDevice,
-                onSendMessage = viewModel::sendMessage,
-                onUriSelected = viewModel::sendImages,
-                onDeleteAllMessages = viewModel::clearAllMessages
+                state = chatState,
+                onSendMessage = chatViewModel::sendMessage,
+                onUriSelected = chatViewModel::sendImages,
+                onDeleteAllMessages = chatViewModel::clearAllMessages,
+                onDisconnect = viewModel::disconnectDevice
             )
         }
     }

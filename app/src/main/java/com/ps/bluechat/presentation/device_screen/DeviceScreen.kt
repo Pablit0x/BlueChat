@@ -40,8 +40,8 @@ fun DeviceScreen(
     onBluetoothEnable: () -> Unit,
     onBluetoothDisable: () -> Unit,
     clearErrorMessage: () -> Unit
-
 ) {
+
     var toastState by remember { mutableStateOf(ToastState()) }
 
     LaunchedEffect(key1 = state.errorMessage) {
