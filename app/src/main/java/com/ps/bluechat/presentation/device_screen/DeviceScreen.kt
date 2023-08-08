@@ -1,6 +1,9 @@
 package com.ps.bluechat.presentation.device_screen
 
 import android.widget.Toast
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.material.*
@@ -41,6 +44,17 @@ fun DeviceScreen(
     onBluetoothDisable: () -> Unit,
     clearErrorMessage: () -> Unit
 ) {
+
+    val isMenuExtended = remember { mutableStateOf(false) }
+
+    val fabAnimationProgress by animateFloatAsState(
+        targetValue = if (isMenuExtended.value) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = LinearEasing
+        ),
+        label = "FloatAnimation",
+    )
 
     var toastState by remember { mutableStateOf(ToastState()) }
 
@@ -106,12 +120,20 @@ fun DeviceScreen(
 
         else -> {
             Scaffold(floatingActionButton = {
-                BluetoothActionSelector(
+                FabGroup(
                     scanningState = state.scanningState,
                     onStartScan = onStartScan,
                     onStopScan = onStopScan,
-                    onStartServer = onStartServer
+                    onStartServer = onStartServer,
+                    animationProgress = fabAnimationProgress,
+                    toggleAnimation = { isMenuExtended.value = isMenuExtended.value.not() }
                 )
+//                BluetoothActionSelector(
+//                    scanningState = state.scanningState,
+//                    onStartScan = onStartScan,
+//                    onStopScan = onStopScan,
+//                    onStartServer = onStartServer
+//                )
             }) { padding ->
                 Column(
                     modifier = Modifier
@@ -119,7 +141,7 @@ fun DeviceScreen(
                         .padding(padding)
                 ) {
 
-                    if(toastState.isDisplayed){
+                    if (toastState.isDisplayed) {
                         SweetError(
                             message = toastState.message,
                             duration = Toast.LENGTH_SHORT,

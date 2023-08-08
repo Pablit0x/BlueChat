@@ -1,6 +1,8 @@
 package com.ps.bluechat.util
 object Constants {
 
+    const val DEFAULT_PADDING = 44
+
     // Screens
     const val HOME_SCREEN = "home_screen"
     const val CHANGE_DEVICE_NAME_SCREEN = "change_device_name_screen"
