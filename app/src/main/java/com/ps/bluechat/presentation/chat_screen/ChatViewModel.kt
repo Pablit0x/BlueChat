@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.ps.bluechat.domain.chat.BluetoothController
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.repository.ChatRepository
+import com.ps.bluechat.presentation.model.ChatState
 import com.ps.bluechat.util.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers

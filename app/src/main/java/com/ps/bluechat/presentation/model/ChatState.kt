@@ -1,4 +1,4 @@
-package com.ps.bluechat.presentation.chat_screen
+package com.ps.bluechat.presentation.model
 
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.BluetoothMessage

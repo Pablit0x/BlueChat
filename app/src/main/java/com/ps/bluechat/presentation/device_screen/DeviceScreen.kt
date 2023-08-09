@@ -18,16 +18,13 @@ import com.ps.bluechat.R
 import com.ps.bluechat.domain.chat.BluetoothDeviceDomain
 import com.ps.bluechat.domain.chat.ConnectionState
 import com.ps.bluechat.navigation.Direction
-import com.ps.bluechat.presentation.components.BluetoothActionSelector
 import com.ps.bluechat.presentation.components.BluetoothDeviceList
 import com.ps.bluechat.presentation.components.DeviceNameField
+import com.ps.bluechat.presentation.components.FabGroup
 import com.ps.bluechat.presentation.components.ModeToggleField
 import com.ps.bluechat.presentation.model.BluetoothState
-import com.ps.bluechat.presentation.model.ToastState
-import com.talhafaki.composablesweettoast.util.SweetToastUtil.SweetError
 
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun DeviceScreen(
     direction: Direction,
@@ -41,8 +38,7 @@ fun DeviceScreen(
     onDiscoverabilityEnable: () -> Unit,
     onDiscoverabilityDisable: () -> Unit,
     onBluetoothEnable: () -> Unit,
-    onBluetoothDisable: () -> Unit,
-    clearErrorMessage: () -> Unit
+    onBluetoothDisable: () -> Unit
 ) {
 
     val isMenuExtended = remember { mutableStateOf(false) }
@@ -53,21 +49,8 @@ fun DeviceScreen(
             durationMillis = 1000,
             easing = LinearEasing
         ),
-        label = "FloatAnimation",
+        label = "fabAnimationProgress",
     )
-
-    var toastState by remember { mutableStateOf(ToastState()) }
-
-    LaunchedEffect(key1 = state.errorMessage) {
-        state.errorMessage?.let { message ->
-            toastState = toastState.copy(
-                message = message,
-                isDisplayed = true,
-                isWarning = true
-            )
-            clearErrorMessage()
-        }
-    }
 
     when (state.connectionState) {
         ConnectionState.OPEN -> {
@@ -128,28 +111,12 @@ fun DeviceScreen(
                     animationProgress = fabAnimationProgress,
                     toggleAnimation = { isMenuExtended.value = isMenuExtended.value.not() }
                 )
-//                BluetoothActionSelector(
-//                    scanningState = state.scanningState,
-//                    onStartScan = onStartScan,
-//                    onStopScan = onStopScan,
-//                    onStartServer = onStartServer
-//                )
             }) { padding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
                 ) {
-
-                    if (toastState.isDisplayed) {
-                        SweetError(
-                            message = toastState.message,
-                            duration = Toast.LENGTH_SHORT,
-                            padding = PaddingValues(16.dp),
-                            contentAlignment = Alignment.Center
-                        )
-                        toastState.isDisplayed = false
-                    }
 
                     ModeToggleField(
                         isOn = state.isBluetoothEnabled,

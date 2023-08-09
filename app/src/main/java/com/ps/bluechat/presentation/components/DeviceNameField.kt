@@ -22,10 +22,8 @@ import com.ps.bluechat.navigation.Direction
 
 @Composable
 fun DeviceNameField(
-    deviceName: String,
-    modifier: Modifier = Modifier,
-    direction: Direction
-){
+    deviceName: String, modifier: Modifier = Modifier, direction: Direction
+) {
     val context: Context = LocalContext.current
     Row(
         modifier = modifier
@@ -33,24 +31,30 @@ fun DeviceNameField(
             .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
-    ){
+    ) {
         Text(
             text = context.getString(com.ps.bluechat.R.string.device_name),
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
-            )
+        )
 
-        IconButton(onClick = { direction.navigateToChangeDeviceNameScreen() }) {
+        IconButton(onClick = {
+            direction.navigateToChangeDeviceNameScreen(
+                deviceName
+            )
+        }) {
             Row(
                 horizontalArrangement = Arrangement.Center
-            ){
+            ) {
                 Text(
-                    text = deviceName,
-                    color = Color.Gray,
-                    fontSize = 16.sp
+                    text = deviceName, color = Color.Gray, fontSize = 16.sp
                 )
 
-                Icon(imageVector = Icons.Default.KeyboardArrowRight, contentDescription = null, tint = Color.Gray)
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = Color.Gray
+                )
             }
         }
 

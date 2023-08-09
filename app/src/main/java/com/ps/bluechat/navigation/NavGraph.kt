@@ -1,6 +1,5 @@
 package com.ps.bluechat.navigation
 
-import android.content.Context
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -11,9 +10,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.google.accompanist.navigation.animation.AnimatedNavHost
 import com.google.accompanist.navigation.animation.composable
 import com.ps.bluechat.R
@@ -23,6 +24,7 @@ import com.ps.bluechat.presentation.change_name_screen.ChangeNameViewModel
 import com.ps.bluechat.presentation.chat_screen.ChatScreen
 import com.ps.bluechat.presentation.chat_screen.ChatViewModel
 import com.ps.bluechat.presentation.device_screen.DeviceScreen
+import com.ps.bluechat.util.Constants
 
 @Composable
 @ExperimentalComposeUiApi
@@ -33,9 +35,7 @@ fun NavGraph(
     navController: NavHostController
 ) {
     val direction = remember(navController) { Direction(navController) }
-    val context: Context = LocalContext.current
-    val viewModel = hiltViewModel<BluetoothViewModel>()
-    val state by viewModel.state.collectAsState()
+    val sharedViewModel = hiltViewModel<BluetoothViewModel>()
 
     AnimatedNavHost(navController = navController,
         startDestination = Screen.HomeScreen.route,
@@ -44,32 +44,39 @@ fun NavGraph(
         composable(
             route = Screen.HomeScreen.route
         ) {
+
+            val state by sharedViewModel.state.collectAsState()
+
             DeviceScreen(
                 direction = direction,
                 state = state,
-                onCreateBond = viewModel::createBond,
-                onRemoveBond = viewModel::removeBond,
-                onStartScan = viewModel::startScan,
-                onStopScan = viewModel::stopScan,
-                onBluetoothEnable = viewModel::enableBluetooth,
-                onBluetoothDisable = viewModel::disableBluetooth,
-                onDiscoverabilityEnable = viewModel::enableDiscoverability,
-                onDiscoverabilityDisable = viewModel::disableDiscoverability,
-                onStartConnecting = viewModel::connectToDevice,
-                onStartServer = viewModel::observeIncomingConnections,
-                clearErrorMessage = viewModel::clearErrorMessage
+                onCreateBond = sharedViewModel::createBond,
+                onRemoveBond = sharedViewModel::removeBond,
+                onStartScan = sharedViewModel::startScan,
+                onStopScan = sharedViewModel::stopScan,
+                onBluetoothEnable = sharedViewModel::enableBluetooth,
+                onBluetoothDisable = sharedViewModel::disableBluetooth,
+                onDiscoverabilityEnable = sharedViewModel::enableDiscoverability,
+                onDiscoverabilityDisable = sharedViewModel::disableDiscoverability,
+                onStartConnecting = sharedViewModel::connectToDevice,
+                onStartServer = sharedViewModel::observeIncomingConnections
             )
         }
         composable(
-            route = Screen.ChangeDeviceNameScreen.route
-        ) {
+            route = "${Screen.ChangeDeviceNameScreen.route}/{${Constants.DEVICE_NAME_NAV_ARGUMENT}}",
+            arguments = listOf(navArgument(
+                Constants.DEVICE_NAME_NAV_ARGUMENT
+            ) {
+                type = NavType.StringType
+            })
+        ) { entry ->
             val changeNameViewModel = hiltViewModel<ChangeNameViewModel>()
+            val deviceName = entry.arguments?.getString(Constants.DEVICE_NAME_NAV_ARGUMENT)
+                ?: stringResource(id = R.string.unknown)
 
-            ChangeNameScreen(direction = direction,
-                deviceName = state.deviceName ?: context.getString(R.string.no_name),
-                onDeviceNameChange = {
-                    changeNameViewModel.changeDeviceName(deviceName = it)
-                })
+            ChangeNameScreen(direction = direction, deviceName = deviceName, onDeviceNameChange = {
+                changeNameViewModel.changeDeviceName(deviceName = it)
+            })
         }
 
         composable(
@@ -85,7 +92,7 @@ fun NavGraph(
                 onSendMessage = chatViewModel::sendMessage,
                 onUriSelected = chatViewModel::sendImages,
                 onDeleteAllMessages = chatViewModel::clearAllMessages,
-                onDisconnect = viewModel::disconnectDevice
+                onDisconnect = sharedViewModel::disconnectDevice
             )
         }
     }

@@ -73,7 +73,7 @@ fun ChangeNameScreen(
                     .padding(16.dp)
             ) {
                 TextField(value = updatedName,
-                    onValueChange = { if (it.length <= 16) updatedName = it },
+                    onValueChange = { if (it.length <= 16 || it.length < updatedName.length ) updatedName = it },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = MaterialTheme.colors.onSecondary,
                         backgroundColor = MaterialTheme.colors.secondary,

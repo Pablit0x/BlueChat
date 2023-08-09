@@ -17,8 +17,8 @@ class Direction(
         }
     }
 
-    val navigateToChangeDeviceNameScreen: () -> Unit = {
-        navController.navigate(Screen.ChangeDeviceNameScreen.route)
+    val navigateToChangeDeviceNameScreen: (deviceName: String) -> Unit = { deviceName ->
+        navController.navigate("${Screen.ChangeDeviceNameScreen.route}/$deviceName")
     }
 
     val navigateBack: () -> Unit = {

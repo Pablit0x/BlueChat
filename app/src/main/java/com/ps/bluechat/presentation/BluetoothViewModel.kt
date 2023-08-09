@@ -108,9 +108,9 @@ class BluetoothViewModel @Inject constructor(
 
     fun disconnectDevice() {
         Log.d(TAG, "disconnectDevice")
-        deviceConnectionJob?.cancel()
-        _state.update { it.copy(connectionState = ConnectionState.IDLE) }
         bluetoothController.closeConnection()
+        _state.update { it.copy(connectionState = ConnectionState.IDLE) }
+        deviceConnectionJob?.cancel()
     }
 
     fun enableBluetooth() {
@@ -168,14 +168,6 @@ class BluetoothViewModel @Inject constructor(
                 )
             }
         }.launchIn(viewModelScope)
-    }
-
-    fun clearErrorMessage() {
-        _state.update {
-            it.copy(
-                errorMessage = null
-            )
-        }
     }
 
     override fun onCleared() {
