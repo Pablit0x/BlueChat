@@ -27,7 +27,6 @@ class MainActivity : ComponentActivity() {
     private val isPermissionGranted = mutableStateOf(false)
 
 
-
     @OptIn(
         ExperimentalAnimationApi::class,
         ExperimentalComposeUiApi::class,
@@ -40,7 +39,7 @@ class MainActivity : ComponentActivity() {
 
         val permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
-        ){ permissions ->
+        ) { permissions ->
             isPermissionGranted.value = permissions.values.all { it }
         }
 
@@ -60,7 +59,7 @@ class MainActivity : ComponentActivity() {
                 Surface(
                     modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background
                 ) {
-                    if(isPermissionGranted.value){
+                    if (isPermissionGranted.value) {
                         NavGraph(navController = navController)
                     }
                 }
