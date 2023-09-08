@@ -4,6 +4,9 @@
 
 BlueChat is an Android application that enables users to send text messages and images to other paired devices over Bluetooth. The app is built using Kotlin and utilizes Jetpack Compose for the user interface, Kotlin Flows for asynchronous data streaming, and Coroutines for handling concurrent tasks.
 
+## Video Demo
+https://github.com/Pablit0x/BlueChat/assets/76017191/9321b7ae-4889-4dc7-b03c-68e6b73a16c7
+
 ## Features
 
 - Establish Bluetooth connections with other devices.
@@ -17,9 +20,6 @@ BlueChat is an Android application that enables users to send text messages and 
 - Unpair already paired devices.
 - Minimalistic and user-friendly UI using Jetpack Compose.
 - Efficient data streaming and handling with Kotlin Flows and Coroutines.
-
-## Video Demo
-https://github.com/Pablit0x/BlueChat/assets/76017191/9321b7ae-4889-4dc7-b03c-68e6b73a16c7
 
 ## Requirements
 
