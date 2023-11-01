@@ -95,7 +95,7 @@ fun BluetoothDeviceList(
         }
         items(scannedDevices) { scannedDevice ->
             BluetoothAvailableDeviceItem(
-                deviceName = scannedDevice.deviceName ?: stringResource(id = R.string.no_name),
+                deviceName = scannedDevice.deviceName,
                 onClick = { onCreateBond(scannedDevice) },
                 modifier = Modifier.padding(8.dp)
             )
